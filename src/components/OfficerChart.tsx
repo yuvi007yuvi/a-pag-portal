@@ -13,7 +13,7 @@ export const OfficerChart: React.FC<OfficerChartProps> = ({ data }) => {
         .slice(0, 10);
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 h-[400px]">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow h-[400px]">
             <h3 className="text-lg font-semibold text-slate-800 mb-4">Top 10 Officers by Complaints</h3>
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }} layout="horizontal">

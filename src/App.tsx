@@ -7,6 +7,7 @@ import { SFIReportsPage } from './pages/SFIReportsPage';
 import { DepartmentReportsPage } from './pages/DepartmentReportsPage';
 import { OfficerMappingPage } from './pages/OfficerMappingPage';
 import { ComplaintsPage } from './pages/ComplaintsPage';
+import { OfficerReportPage } from './pages/OfficerReportPage';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
               <Route path="/sfi-reports" element={<SFIReportsPage />} />
               <Route path="/department-reports" element={<DepartmentReportsPage />} />
               <Route path="/officer-mapping" element={<OfficerMappingPage />} />
+              <Route path="/officer-reports" element={<OfficerReportPage />} />
               <Route path="/complaints" element={<ComplaintsPage />} />
             </Routes>
           </main>

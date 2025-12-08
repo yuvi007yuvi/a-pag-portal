@@ -13,7 +13,7 @@ export const ZoneChart: React.FC<ZoneChartProps> = ({ data }) => {
     const colors = ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 h-[400px]">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow h-[400px]">
             <h3 className="text-lg font-semibold text-slate-800 mb-4">Complaints by Zone</h3>
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>

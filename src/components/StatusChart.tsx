@@ -13,7 +13,7 @@ export const StatusChart: React.FC<StatusChartProps> = ({ data }) => {
     const COLORS = ['#22c55e', '#ef4444', '#f59e0b', '#64748b'];
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 h-[400px]">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow h-[400px]">
             <h3 className="text-lg font-semibold text-slate-800 mb-4">Complaint Status</h3>
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart>

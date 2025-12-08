@@ -98,41 +98,42 @@ export const SFIReportTable: React.FC<SFIReportTableProps> = ({ data }) => {
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-white">
+        <div className="bg-white border border-slate-300 overflow-hidden shadow-sm rounded-lg">
+            <div className="px-4 py-3 border-b border-slate-300 bg-slate-50">
                 <h3 className="font-semibold text-slate-800 text-lg">SFI/Officer Performance Report</h3>
-                <p className="text-sm text-slate-500 mt-1">All officers including those with no assigned complaints</p>
+                <p className="text-sm text-slate-500">All officers including those with no assigned complaints</p>
             </div>
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                    <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b-2 border-slate-200">
+            <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                <table className="w-full text-sm text-left border-collapse border border-slate-300 relative">
+                    <thead className="text-xs text-slate-700 uppercase bg-slate-100 z-10 sticky top-0 shadow-sm">
                         <tr>
-                            <th className="px-6 py-3 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('officer')}>
+                            <th className="border border-slate-300 px-2 py-1 text-center w-16 bg-slate-100">Sr. No.</th>
+                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 bg-slate-100" onClick={() => handleSort('officer')}>
                                 <div className="flex items-center gap-1">
                                     Officer Name <SortIcon column="officer" />
                                 </div>
                             </th>
-                            <th className="px-6 py-3 cursor-pointer hover:bg-slate-100 text-center" onClick={() => handleSort('total')}>
+                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 text-center w-24 bg-slate-100" onClick={() => handleSort('total')}>
                                 <div className="flex items-center justify-center gap-1">
                                     Total <SortIcon column="total" />
                                 </div>
                             </th>
-                            <th className="px-6 py-3 cursor-pointer hover:bg-slate-100 text-center" onClick={() => handleSort('closed')}>
+                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 text-center w-24 bg-slate-100" onClick={() => handleSort('closed')}>
                                 <div className="flex items-center justify-center gap-1">
                                     Closed <SortIcon column="closed" />
                                 </div>
                             </th>
-                            <th className="px-6 py-3 cursor-pointer hover:bg-slate-100 text-center" onClick={() => handleSort('open')}>
+                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 text-center w-24 bg-slate-100" onClick={() => handleSort('open')}>
                                 <div className="flex items-center justify-center gap-1">
                                     Open <SortIcon column="open" />
                                 </div>
                             </th>
-                            <th className="px-6 py-3 cursor-pointer hover:bg-slate-100 text-center" onClick={() => handleSort('pending')}>
+                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 text-center w-24 bg-slate-100" onClick={() => handleSort('pending')}>
                                 <div className="flex items-center justify-center gap-1">
                                     Pending <SortIcon column="pending" />
                                 </div>
                             </th>
-                            <th className="px-6 py-3 cursor-pointer hover:bg-slate-100 text-center" onClick={() => handleSort('closureRate')}>
+                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 text-center w-32 bg-slate-100" onClick={() => handleSort('closureRate')}>
                                 <div className="flex items-center justify-center gap-1">
                                     Closure Rate <SortIcon column="closureRate" />
                                 </div>
@@ -141,59 +142,37 @@ export const SFIReportTable: React.FC<SFIReportTableProps> = ({ data }) => {
                     </thead>
                     <tbody>
                         {statsArray.map((stats, index) => (
-                            <tr key={stats.officer} className={`border-b hover:bg-slate-50 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                                <td className="px-6 py-4 font-medium text-blue-700">{stats.officer}</td>
-                                <td className="px-6 py-4 text-center font-semibold text-slate-900">
-                                    {stats.total === 0 ? <span className="text-slate-400">N/A</span> : stats.total}
+                            <tr key={stats.officer} className="hover:bg-blue-50 even:bg-slate-50/50 transition-colors">
+                                <td className="border border-slate-300 px-2 py-1 text-center font-medium text-slate-600">{index + 1}</td>
+                                <td className="border border-slate-300 px-2 py-1 font-medium text-slate-800">{stats.officer}</td>
+                                <td className="border border-slate-300 px-2 py-1 text-center font-semibold text-slate-900 bg-slate-50">
+                                    {stats.total === 0 ? <span className="text-slate-400">-</span> : stats.total}
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                    <span className={`inline-block px-3 py-1 rounded-full font-medium ${stats.total === 0 ? 'bg-slate-100 text-slate-400' : 'bg-green-100 text-green-800'
-                                        }`}>
-                                        {stats.closed}
-                                    </span>
+                                <td className="border border-slate-300 px-2 py-1 text-center text-green-700 bg-green-50">
+                                    {stats.closed}
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                    <span className={`inline-block px-3 py-1 rounded-full font-medium ${stats.total === 0 ? 'bg-slate-100 text-slate-400' : 'bg-amber-100 text-amber-800'
-                                        }`}>
-                                        {stats.open}
-                                    </span>
+                                <td className="border border-slate-300 px-2 py-1 text-center text-amber-700 bg-amber-50">
+                                    {stats.open}
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                    <span className={`inline-block px-3 py-1 rounded-full font-medium ${stats.total === 0 ? 'bg-slate-100 text-slate-400' : 'bg-blue-100 text-blue-800'
-                                        }`}>
-                                        {stats.pending}
-                                    </span>
+                                <td className="border border-slate-300 px-2 py-1 text-center text-blue-700 bg-blue-50">
+                                    {stats.pending}
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                    {stats.total === 0 ? (
-                                        <span className="text-slate-400">N/A</span>
-                                    ) : (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <div className="w-24 bg-slate-200 rounded-full h-2">
-                                                <div
-                                                    className={`h-2 rounded-full ${stats.closureRate >= 80 ? 'bg-green-500' :
-                                                            stats.closureRate >= 60 ? 'bg-yellow-500' :
-                                                                stats.closureRate >= 40 ? 'bg-orange-500' : 'bg-red-500'
-                                                        }`}
-                                                    style={{ width: `${stats.closureRate}%` }}
-                                                />
-                                            </div>
-                                            <span className="font-semibold text-slate-700 min-w-[3rem] text-right">
-                                                {stats.closureRate.toFixed(1)}%
-                                            </span>
-                                        </div>
-                                    )}
+                                <td className={`border border-slate-300 px-2 py-1 text-center font-semibold ${stats.total === 0 ? 'text-slate-400' :
+                                    stats.closureRate >= 80 ? 'text-green-700 bg-green-100' :
+                                        stats.closureRate >= 60 ? 'text-yellow-700 bg-yellow-100' :
+                                            stats.closureRate >= 40 ? 'text-orange-700 bg-orange-100' : 'text-red-700 bg-red-100'
+                                    }`}>
+                                    {stats.total === 0 ? '-' : `${stats.closureRate.toFixed(1)}%`}
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
+            <div className="px-4 py-2 bg-slate-50 border-t border-slate-300">
                 <p className="text-xs text-slate-500">
                     Total Officers: <span className="font-semibold">{statsArray.length}</span> •
-                    With Data: <span className="font-semibold">{statsArray.filter(s => s.total > 0).length}</span> •
-                    Click column headers to sort
+                    With Data: <span className="font-semibold">{statsArray.filter(s => s.total > 0).length}</span>
                 </p>
             </div>
         </div>
