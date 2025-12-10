@@ -7,30 +7,18 @@ import { ExportMenu } from '../components/ExportMenu';
 import { exportToJPEG, exportToPDF, exportToExcel } from '../utils/exportUtils';
 
 export const OfficerMappingPage: React.FC = () => {
-    const { filteredData, dateFrom, dateTo } = useData();
+    const { dateFrom, dateTo } = useData();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterZone, setFilterZone] = useState<string>('All');
     const [filterDept, setFilterDept] = useState<string>('All');
-
-    // Calculate complaint counts for each officer
-    const officerCounts: Record<string, number> = {};
-    const supervisorCounts: Record<string, number> = {};
-
-    filteredData.forEach(complaint => {
-        if (complaint.assignedOfficer) {
-            officerCounts[complaint.assignedOfficer] = (officerCounts[complaint.assignedOfficer] || 0) + 1;
-        }
-        if (complaint.assignedSupervisor) {
-            supervisorCounts[complaint.assignedSupervisor] = (supervisorCounts[complaint.assignedSupervisor] || 0) + 1;
-        }
-    });
+    const [viewMode, setViewMode] = useState<'officer' | 'supervisor'>('officer');
 
     // Get unique zones and departments
     const zones = ['All', ...new Set(officerMappings.map(m => m.zone))];
     const departments = ['All', ...new Set(officerMappings.map(m => m.department))];
 
     // Filter mappings
-    let filteredMappings = officerMappings.filter(mapping => {
+    const filteredMappings = officerMappings.filter(mapping => {
         const matchesSearch =
             mapping.officer.toLowerCase().includes(searchTerm.toLowerCase()) ||
             mapping.supervisor.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -43,6 +31,48 @@ export const OfficerMappingPage: React.FC = () => {
         return matchesSearch && matchesZone && matchesDept;
     });
 
+    // Group mappings Logic
+    interface GroupedMapping {
+        primaryKey: string; // Officer Name or Supervisor Name
+        department: string;
+        zones: string[];
+        wards: string[];
+        secondaryList: string[]; // Supervisors list (for Officer view) or Officers list (for Supervisor view)
+    }
+
+    const groupedMappings: GroupedMapping[] = Object.values(filteredMappings.reduce((acc, mapping) => {
+        const isOfficerMode = viewMode === 'officer';
+        const primary = isOfficerMode ? mapping.officer : mapping.supervisor;
+        const secondary = isOfficerMode ? mapping.supervisor : mapping.officer;
+
+        // Key needs to be unique per row - Aggregating by Primary (Officer/Sup) + Dept
+        // We do NOT include zone in the key, so we can aggregate zones
+        const key = `${primary}-${mapping.department}`;
+
+        if (!acc[key]) {
+            acc[key] = {
+                primaryKey: primary,
+                department: mapping.department,
+                zones: [],
+                wards: [],
+                secondaryList: []
+            };
+        }
+
+        if (!acc[key].zones.includes(mapping.zone)) {
+            acc[key].zones.push(mapping.zone);
+        }
+
+        if (!acc[key].wards.includes(mapping.ward)) {
+            acc[key].wards.push(mapping.ward);
+        }
+
+        if (!acc[key].secondaryList.includes(secondary)) {
+            acc[key].secondaryList.push(secondary);
+        }
+        return acc;
+    }, {} as Record<string, GroupedMapping>));
+
     // Calculate summary stats
     const totalOfficers = new Set(officerMappings.map(m => m.officer)).size;
     const totalSupervisors = new Set(officerMappings.map(m => m.supervisor)).size;
@@ -50,31 +80,55 @@ export const OfficerMappingPage: React.FC = () => {
     const totalWards = new Set(officerMappings.map(m => m.ward)).size;
 
     const handleExportExcel = () => {
-        const dataToExport = filteredMappings.map((m, index) => ({
+        const dataToExport = groupedMappings.map((m, index) => ({
             'Sr No': index + 1,
-            'Zone': m.zone,
-            'Ward': m.ward,
+            'Zones': m.zones.join(', '),
             'Department': m.department,
-            'Supervisor': m.supervisor,
-            'Sup. Count': supervisorCounts[m.supervisor] || 0,
-            'Officer (SFI/JE)': m.officer,
-            'Officer Count': officerCounts[m.officer] || 0
+            [viewMode === 'officer' ? 'Officer (SFI/JE)' : 'Supervisor']: m.primaryKey,
+            'Total Wards': m.wards.length,
+            'Wards': m.wards.join(', '),
+            [viewMode === 'officer' ? 'Supervisors' : 'Officer (SFI/JE)']: m.secondaryList.join(', ')
         }));
-        exportToExcel(dataToExport, `Officer_Mapping_Report_${new Date().toISOString().split('T')[0]}`);
+        exportToExcel(dataToExport, `${viewMode === 'officer' ? 'Officer' : 'Supervisor'}_Mapping_Report_${new Date().toISOString().split('T')[0]}`);
     };
 
     return (
         <div className="space-y-6 pb-12">
             {/* Control Header */}
             <div className="flex flex-wrap justify-between items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm print:hidden">
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                    <Users className="w-6 h-6 text-purple-600" />
-                    Officer Mapping
-                </h2>
+                <div className="flex items-center gap-4">
+                    <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <Users className="w-6 h-6 text-purple-600" />
+                        {viewMode === 'officer' ? 'Officer Mapping' : 'Supervisor Mapping'}
+                    </h2>
+
+                    {/* View Toggle */}
+                    <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                        <button
+                            onClick={() => setViewMode('officer')}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${viewMode === 'officer'
+                                    ? 'bg-white text-purple-600 shadow-sm border border-slate-200'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                        >
+                            Officer View
+                        </button>
+                        <button
+                            onClick={() => setViewMode('supervisor')}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${viewMode === 'supervisor'
+                                    ? 'bg-white text-purple-600 shadow-sm border border-slate-200'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                        >
+                            Supervisor View
+                        </button>
+                    </div>
+                </div>
+
                 <div className="flex gap-2">
                     <ExportMenu
-                        onExportJPEG={() => exportToJPEG('mapping-report-content', 'Officer_Mapping_Report')}
-                        onExportPDF={() => exportToPDF('mapping-report-content', 'Officer_Mapping_Report')}
+                        onExportJPEG={() => exportToJPEG('mapping-report-content', `${viewMode}_Mapping_Report`)}
+                        onExportPDF={() => exportToPDF('mapping-report-content', `${viewMode}_Mapping_Report`)}
                         onExportExcel={handleExportExcel}
                     />
                 </div>
@@ -87,7 +141,7 @@ export const OfficerMappingPage: React.FC = () => {
                         <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase">Search</label>
                         <input
                             type="text"
-                            placeholder="Search officer, supervisor..."
+                            placeholder="Search..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm shadow-sm focus:ring-2 focus:ring-blue-500 hover:border-blue-400 transition-colors"
@@ -123,7 +177,7 @@ export const OfficerMappingPage: React.FC = () => {
             {/* Export Wrapper */}
             <div id="mapping-report-content" className="bg-white p-6 sm:p-8 min-h-screen">
                 <ReportHeader
-                    title="Officer & Supervisor Mapping Report"
+                    title={`${viewMode === 'officer' ? 'Officer' : 'Supervisor'} & Mapping Report`}
                     dateFrom={dateFrom}
                     dateTo={dateTo}
                 />
@@ -151,39 +205,65 @@ export const OfficerMappingPage: React.FC = () => {
                 {/* Mapping Table */}
                 <div className="overflow-hidden border border-slate-300">
                     <div className="px-6 py-4 border-b border-slate-300 bg-slate-50">
-                        <h3 className="font-semibold text-slate-800 text-lg uppercase">Departmental structure & Assignments</h3>
+                        <h3 className="font-semibold text-slate-800 text-lg uppercase">
+                            {viewMode === 'officer' ? 'Officer Wise Assignments' : 'Supervisor Wise Assignments'}
+                        </h3>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm border-collapse border border-slate-300 relative">
                             <thead className="bg-slate-100">
                                 <tr>
                                     <th className="border border-slate-300 px-2 py-1 text-center font-semibold text-slate-700 w-16 bg-slate-100">Sr. No</th>
-                                    <th className="border border-slate-300 px-2 py-1 text-left font-semibold text-slate-700 bg-slate-100">Zone</th>
-                                    <th className="border border-slate-300 px-2 py-1 text-left font-semibold text-slate-700 bg-slate-100">Ward</th>
-                                    <th className="border border-slate-300 px-2 py-1 text-center font-semibold text-slate-700 bg-slate-100">Department</th>
-                                    <th className="border border-slate-300 px-2 py-1 text-left font-semibold text-slate-700 bg-slate-100">Supervisor</th>
-                                    <th className="border border-slate-300 px-2 py-1 text-center font-semibold text-slate-700 w-24 bg-slate-100">Sup. Count</th>
-                                    <th className="border border-slate-300 px-2 py-1 text-left font-semibold text-slate-700 bg-slate-100">Officer (SFI/JE)</th>
-                                    <th className="border border-slate-300 px-2 py-1 text-center font-semibold text-slate-700 w-24 bg-slate-100">Officer Count</th>
+                                    <th className="border border-slate-300 px-2 py-1 text-left font-semibold text-slate-700 bg-slate-100 w-32">Zones</th>
+                                    <th className="border border-slate-300 px-2 py-1 text-center font-semibold text-slate-700 w-24 bg-slate-100">Department</th>
+                                    <th className="border border-slate-300 px-2 py-1 text-left font-semibold text-slate-700 bg-slate-100 w-48">
+                                        {viewMode === 'officer' ? 'Officer (SFI/JE)' : 'Supervisor'}
+                                    </th>
+                                    <th className="border border-slate-300 px-2 py-1 text-left font-semibold text-slate-700 bg-slate-100">Wards</th>
+                                    <th className="border border-slate-300 px-2 py-1 text-center font-semibold text-slate-700 w-24 bg-slate-100">Total Wards</th>
+                                    <th className="border border-slate-300 px-2 py-1 text-left font-semibold text-slate-700 bg-slate-100 w-48">
+                                        {viewMode === 'officer' ? 'Supervisors' : 'Officer (SFI/JE)'}
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredMappings.map((mapping, index) => (
+                                {groupedMappings.map((mapping, index) => (
                                     <tr key={index} className="hover:bg-blue-50 even:bg-slate-50/50 transition-colors">
-                                        <td className="border border-slate-300 px-2 py-1 text-center text-slate-600">{index + 1}</td>
-                                        <td className="border border-slate-300 px-2 py-1 font-medium text-slate-900">{mapping.zone}</td>
-                                        <td className="border border-slate-300 px-2 py-1 text-slate-600">{mapping.ward}</td>
-                                        <td className={`border border-slate-300 px-2 py-1 text-center font-medium ${mapping.department === 'Sanitation' ? 'text-blue-700 bg-blue-50' : 'text-green-700 bg-green-50'
+                                        <td className="border border-slate-300 px-2 py-1 text-center text-slate-600 align-top">{index + 1}</td>
+                                        <td className="border border-slate-300 px-2 py-1 font-medium text-slate-900 align-top">
+                                            <div className="flex flex-wrap gap-1">
+                                                {mapping.zones.map(z => (
+                                                    <span key={z} className="bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded text-xs border border-purple-200">
+                                                        {z}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td className={`border border-slate-300 px-2 py-1 text-center font-medium align-top ${mapping.department === 'Sanitation' ? 'text-blue-700 bg-blue-50' : 'text-green-700 bg-green-50'
                                             }`}>
                                             {mapping.department}
                                         </td>
-                                        <td className="border border-slate-300 px-2 py-1 font-medium text-green-700 bg-green-50/50">{mapping.supervisor}</td>
-                                        <td className="border border-slate-300 px-2 py-1 text-center font-semibold text-green-800 bg-green-50">
-                                            {supervisorCounts[mapping.supervisor] || 0}
+                                        <td className="border border-slate-300 px-2 py-1 font-medium text-blue-700 bg-blue-50/50 align-top">{mapping.primaryKey}</td>
+                                        <td className="border border-slate-300 px-2 py-1 text-slate-600">
+                                            <div className="flex flex-wrap gap-1">
+                                                {mapping.wards.map(ward => (
+                                                    <span key={ward} className="bg-slate-100 px-1.5 py-0.5 rounded text-xs border border-slate-200 break-words">
+                                                        {ward}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         </td>
-                                        <td className="border border-slate-300 px-2 py-1 font-medium text-blue-700 bg-blue-50/50">{mapping.officer}</td>
-                                        <td className="border border-slate-300 px-2 py-1 text-center font-semibold text-blue-800 bg-blue-50">
-                                            {officerCounts[mapping.officer] || 0}
+                                        <td className="border border-slate-300 px-2 py-1 text-center font-bold text-slate-800 bg-slate-50 align-top">
+                                            {mapping.wards.length}
+                                        </td>
+                                        <td className="border border-slate-300 px-2 py-1 text-slate-600 align-top">
+                                            <div className="flex flex-wrap gap-1">
+                                                {mapping.secondaryList.map(item => (
+                                                    <span key={item} className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded text-xs border border-green-200">
+                                                        {item}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
