@@ -1,16 +1,19 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, ClipboardList, Upload, Building, Map, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, ClipboardList, Upload, Building, Map, FileText, TrendingUp, Activity } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
     const navItems = [
         { to: '/', icon: Upload, label: 'Upload Data' },
         { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { to: '/sfi-reports', icon: Users, label: 'SFI Reports' },
+        { to: '/supervisor-reports', icon: UserCheck, label: 'Supervisor Reports' },
         { to: '/department-reports', icon: Building, label: 'Dept Reports' },
         { to: '/officer-mapping', icon: Map, label: 'Officer Mapping' },
         { to: '/officer-reports', icon: FileText, label: 'Officer Reports' },
         { to: '/complaints', icon: ClipboardList, label: 'All Complaints' },
+        { to: '/complainant-trends', icon: TrendingUp, label: 'Complainant Trends' },
+        { to: '/subtype-trends', icon: Activity, label: 'Subtype Trends' },
     ];
 
     return (

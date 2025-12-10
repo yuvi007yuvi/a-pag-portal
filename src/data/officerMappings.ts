@@ -6,7 +6,6 @@ export interface OfficerMapping {
     supervisor: string;
     officer: string;
 }
-
 export const officerMappings: OfficerMapping[] = [
     { zone: "3-Aurangabad", ward: "01-Birjapur", department: "Sanitation", supervisor: "Yogesh Chaudhary", officer: "Shri Nihal Singh" },
     { zone: "1-City", ward: "02-Ambedkar Nagar", department: "Sanitation", supervisor: "Gopal", officer: "Shri Saurav Agarwal" },
@@ -204,12 +203,60 @@ export function findOfficer(zone: string, ward: string, complaintType: string): 
     return nameMatch || null;
 }
 
+// List of ONLY allowed complaint subtypes for calculation
+export const ALLOWED_COMPLAINT_TYPES = [
+    "Illegal Dumping of C&D waste",
+    "Potholes",
+    "Unpaved road",
+    "Broken Footpath-Divider",
+    "Footpath/Pavement Required",
+    "Barren Land to be Greened",
+    "Muds -Silt sticking Road Side",
+    "Open-Vacant-Illegal Dumping",
+    "Burning of Garbage",
+    "Road Dust",
+    "Overflowing Garbage Dustbins"
+];
+
+// List of ONLY allowed complainant names for calculation
+export const ALLOWED_COMPLAINANT_NAMES = [
+    "Chandraveer Singh",
+    "Vijendra Singh",
+    "dheeraj soni",
+    "Roshan pandey",
+    "Aditya Khare",
+    "Saurabh Chauhan",
+    "Vivek Kumar",
+    "ravi tomar",
+    "Vishal",
+    "VISHAL VISHAL"
+];
+
 function getDepartmentFromComplaintType(type: string): string {
-    const sanitationTypes = ['Door To Door', 'Road Sweeping', 'Drain Cleaning', 'Sanitation', 'Dead Animals'];
-    const civilTypes = ['STREET LIGHT', 'Civil', 'Water Logging'];
+    if (!type) return 'Sanitation';
 
-    if (sanitationTypes.some(t => type?.includes(t))) return 'Sanitation';
-    if (civilTypes.some(t => type?.includes(t))) return 'Civil';
+    // Strict mapping based on user table
+    const civilTypes = [
+        "Illegal Dumping of C&D waste",
+        "Potholes",
+        "Unpaved road",
+        "Broken Footpath-Divider",
+        "Footpath/Pavement Required",
+        "Barren Land to be Greened"
+    ];
 
-    return 'Sanitation'; // Default
+    const sanitationTypes = [
+        "Muds -Silt sticking Road Side",
+        "Open-Vacant-Illegal Dumping",
+        "Burning of Garbage",
+        "Road Dust",
+        "Overflowing Garbage Dustbins"
+    ];
+
+    // Check strict equality or substring match if needed (using substring for safety)
+    if (civilTypes.some(t => type.includes(t))) return 'Civil';
+    if (sanitationTypes.some(t => type.includes(t))) return 'Sanitation';
+
+    // Fallback? Ideally we filter these out before calling this, but for safety:
+    return 'Sanitation';
 }

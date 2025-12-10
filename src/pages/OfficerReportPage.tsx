@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useData } from '../context/DataContext';
 import { officerMappings } from '../data/officerMappings';
 import { FileText, Printer } from 'lucide-react';
@@ -19,7 +19,8 @@ interface OfficerStats {
 
 export const OfficerReportPage: React.FC = () => {
     const { filteredData, stats, dateFrom, dateTo } = useData();
-    const [selectedDept, setSelectedDept] = useState<'Civil' | 'Sanitation' | 'Both'>('Both');
+    // HARDCODED: Officer Page is for Civil ONLY (JE)
+    const selectedDept = 'Civil';
 
     if (!stats) {
         return (
@@ -33,10 +34,8 @@ export const OfficerReportPage: React.FC = () => {
     const calculateOfficerStats = (department: 'Civil' | 'Sanitation' | 'Both'): OfficerStats[] => {
         const officerStatsMap: Record<string, OfficerStats> = {};
 
-        // Get relevant officer mappings
-        const relevantMappings = department === 'Both'
-            ? officerMappings
-            : officerMappings.filter(m => m.department === department);
+        // Get relevant officer mappings - FILTERED BY HARDCODED DEPT
+        const relevantMappings = officerMappings.filter(m => m.department === department);
 
         // Initialize all officers from mappings
         relevantMappings.forEach(mapping => {
@@ -62,19 +61,7 @@ export const OfficerReportPage: React.FC = () => {
             const officer = complaint.assignedOfficer;
             if (!officer) return;
 
-            // Filter by department if needed
-            if (department !== 'Both') {
-                const complaintType = complaint['Complainttype'] || '';
-                const sanitationTypes = ['Door To Door', 'Road Sweeping', 'Drain Cleaning', 'Sanitation', 'Dead Animals'];
-                const civilTypes = ['STREET LIGHT', 'Civil', 'Water Logging'];
-
-                const isSanitation = sanitationTypes.some(t => complaintType.includes(t));
-                const isCivil = civilTypes.some(t => complaintType.includes(t));
-
-                if (department === 'Sanitation' && !isSanitation) return;
-                if (department === 'Civil' && !isCivil) return;
-            }
-
+            // Only process if officer exists in our filtered map
             if (officerStatsMap[officer]) {
                 officerStatsMap[officer].total++;
                 const status = complaint['Status']?.toLowerCase() || '';
@@ -120,7 +107,7 @@ export const OfficerReportPage: React.FC = () => {
             'Open': o.open,
             'Closure Rate': `${o.closureRate.toFixed(2)}%`
         }));
-        exportToExcel(excelData, `Officer_Report_${selectedDept}_${new Date().toISOString().split('T')[0]}`);
+        exportToExcel(excelData, `Officer_Report_Civil_${new Date().toISOString().split('T')[0]}`);
     };
 
     return (
@@ -130,39 +117,8 @@ export const OfficerReportPage: React.FC = () => {
                 <div>
                     <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                         <FileText className="w-6 h-6 text-blue-600" />
-                        Officer Reports
+                        Officer Reports (Civil)
                     </h2>
-                </div>
-
-                {/* Department Toggle */}
-                <div className="flex bg-slate-100 p-1 rounded-lg">
-                    <button
-                        onClick={() => setSelectedDept('Both')}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${selectedDept === 'Both'
-                            ? 'bg-white text-blue-700 shadow-sm'
-                            : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                    >
-                        Both
-                    </button>
-                    <button
-                        onClick={() => setSelectedDept('Sanitation')}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${selectedDept === 'Sanitation'
-                            ? 'bg-white text-blue-700 shadow-sm'
-                            : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                    >
-                        Sanitation
-                    </button>
-                    <button
-                        onClick={() => setSelectedDept('Civil')}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${selectedDept === 'Civil'
-                            ? 'bg-white text-blue-700 shadow-sm'
-                            : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                    >
-                        Civil
-                    </button>
                 </div>
 
                 <div className="flex gap-2">
@@ -174,8 +130,8 @@ export const OfficerReportPage: React.FC = () => {
                         Print
                     </button>
                     <ExportMenu
-                        onExportJPEG={() => exportToJPEG('officer-report-content', 'Officer_Report')}
-                        onExportPDF={() => exportToPDF('officer-report-content', 'Officer_Report')}
+                        onExportJPEG={() => exportToJPEG('officer-report-content', 'Officer_Report_Civil')}
+                        onExportPDF={() => exportToPDF('officer-report-content', 'Officer_Report_Civil')}
                         onExportExcel={handleExportExcel}
                     />
                 </div>
@@ -184,7 +140,7 @@ export const OfficerReportPage: React.FC = () => {
             {/* Report Content Wrapper */}
             <div id="officer-report-content" className="bg-white p-6 sm:p-8 min-h-screen">
                 <ReportHeader
-                    title={`${selectedDept === 'Both' ? 'All' : selectedDept} Officers Performance Report`}
+                    title="Officer Performance Report (Civil)"
                     dateFrom={dateFrom}
                     dateTo={dateTo}
                 />

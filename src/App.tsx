@@ -4,10 +4,13 @@ import { Sidebar } from './components/Sidebar';
 import { UploadPage } from './pages/UploadPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { SFIReportsPage } from './pages/SFIReportsPage';
+import { SupervisorReportPage } from './pages/SupervisorReportPage';
 import { DepartmentReportsPage } from './pages/DepartmentReportsPage';
 import { OfficerMappingPage } from './pages/OfficerMappingPage';
 import { ComplaintsPage } from './pages/ComplaintsPage';
 import { OfficerReportPage } from './pages/OfficerReportPage';
+import { ComplainantTrendsPage } from './pages/ComplainantTrendsPage';
+import { SubtypeTrendsPage } from './pages/SubtypeTrendsPage';
 
 function App() {
   return (
@@ -33,9 +36,12 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/sfi-reports" element={<SFIReportsPage />} />
               <Route path="/department-reports" element={<DepartmentReportsPage />} />
+              <Route path="/supervisor-reports" element={<SupervisorReportPage />} />
               <Route path="/officer-mapping" element={<OfficerMappingPage />} />
               <Route path="/officer-reports" element={<OfficerReportPage />} />
               <Route path="/complaints" element={<ComplaintsPage />} />
+              <Route path="/complainant-trends" element={<ComplainantTrendsPage />} />
+              <Route path="/subtype-trends" element={<SubtypeTrendsPage />} />
             </Routes>
           </main>
         </div>

@@ -13,17 +13,22 @@ interface OfficerStats {
 
 interface SFIReportTableProps {
     data: ComplaintRecord[];
+    department?: 'Sanitation' | 'Civil';
 }
 
-export const SFIReportTable: React.FC<SFIReportTableProps> = ({ data }) => {
+export const SFIReportTable: React.FC<SFIReportTableProps> = ({ data, department }) => {
     const [sortColumn, setSortColumn] = useState<keyof OfficerStats>('total');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
     // Initialize all officers from mapping with zero stats
     const officerStats: Record<string, OfficerStats> = {};
 
-    // First, add all officers from the mapping
-    const uniqueOfficers = new Set(officerMappings.map(m => m.officer));
+    // First, add all officers from the mapping, optionally filtered by department
+    const relevantMappings = department
+        ? officerMappings.filter(m => m.department === department)
+        : officerMappings;
+
+    const uniqueOfficers = new Set(relevantMappings.map(m => m.officer));
     uniqueOfficers.forEach(officer => {
         officerStats[officer] = {
             officer,

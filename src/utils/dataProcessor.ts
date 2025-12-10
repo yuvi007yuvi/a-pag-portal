@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import { findOfficer } from '../data/officerMappings';
+import { findOfficer, ALLOWED_COMPLAINT_TYPES, ALLOWED_COMPLAINANT_NAMES } from '../data/officerMappings';
 
 export interface ComplaintRecord {
     'Sr No': string;
@@ -10,6 +10,7 @@ export interface ComplaintRecord {
     'Ward': string;
     'Status': string;
     'Complainttype': string;
+    'complaintsubtype': string; // Key column for filtering and logic
     'Complaint Registered Date': string;
     // Officer assignment (populated after parsing)
     assignedOfficer?: string;
@@ -34,12 +35,36 @@ export const parseCSV = (file: File): Promise<ComplaintRecord[]> => {
             skipEmptyLines: true,
             complete: (results) => {
                 // Assign officers to complaints
-                const records = results.data as ComplaintRecord[];
+                let records = results.data as ComplaintRecord[];
+
+                records.forEach(record => {
+                    // NORMALIZE: Fix variations of "Muds -Silt sticking Road Side"
+                    if (record['complaintsubtype'] && record['complaintsubtype'].includes('Muds')) {
+                        record['complaintsubtype'] = 'Muds -Silt sticking Road Side';
+                    }
+                });
+
+                // FILTER: Only keep allowed complaint types AND allowed complainants
+                records = records.filter(record => {
+                    const type = record['complaintsubtype'] || '';
+                    const name = record['Name'] || '';
+
+                    const isAllowedType = ALLOWED_COMPLAINT_TYPES.some(allowed => type.includes(allowed));
+
+                    // Check if name matches any allowed complainant name (trimming whitespace)
+                    const isAllowedComplainant = ALLOWED_COMPLAINANT_NAMES.some(allowed =>
+                        name.trim().toLowerCase() === allowed.toLowerCase()
+                    );
+
+                    // Both conditions must be true
+                    return isAllowedType && isAllowedComplainant;
+                });
+
                 records.forEach(record => {
                     const officer = findOfficer(
                         record['Zone'] || '',
                         record['Ward'] || '',
-                        record['Complainttype'] || ''
+                        record['complaintsubtype'] || ''
                     );
                     if (officer) {
                         record.assignedOfficer = officer.officer;
