@@ -1,4 +1,5 @@
 import React from 'react';
+import logo2 from '../logo 2.png';
 
 interface ReportHeaderProps {
     title: string;
@@ -11,6 +12,7 @@ export const ReportHeader: React.FC<ReportHeaderProps> = ({ title, dateFrom, dat
         <div className="bg-white p-6 border-b border-slate-200 mb-6 flex justify-between items-center" id="report-header">
             <div className="flex items-center gap-4">
                 <img src="/logo.png" alt="Logo" className="h-16 w-auto" />
+                <img src={logo2} alt="Logo 2" className="h-16 w-auto" />
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-wide">{title}</h1>
                     <p className="text-sm text-slate-500">A-PAG Portal Generated Report</p>

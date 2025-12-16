@@ -27,11 +27,29 @@ export const SupervisorReportPage: React.FC = () => {
     const uniqueRelevantSupervisors = new Set(relevantSupervisors);
 
     const handleExportExcel = () => {
-        const supervisorStats: Record<string, any> = {};
+        // Identify unique statuses from data
+        const uniqueStatuses = Array.from(new Set(filteredData.map(d => (d['Status'] || 'Unknown').trim()))).sort();
+
+        interface DynamicSupervisorExportStats {
+            supervisor: string;
+            total: number;
+            closed: number;
+            statusCounts: Record<string, number>;
+            closureRate: number;
+        }
+
+        const supervisorStats: Record<string, DynamicSupervisorExportStats> = {};
 
         // Initialize only relevant supervisors
         uniqueRelevantSupervisors.forEach(supervisor => {
-            supervisorStats[supervisor] = { supervisor, total: 0, closed: 0, open: 0, pending: 0, closureRate: 0 };
+            supervisorStats[supervisor] = {
+                supervisor,
+                total: 0,
+                closed: 0,
+                statusCounts: {},
+                closureRate: 0
+            };
+            uniqueStatuses.forEach(s => supervisorStats[supervisor].statusCounts[s] = 0);
         });
 
         // Populate from data
@@ -46,25 +64,24 @@ export const SupervisorReportPage: React.FC = () => {
 
             const s = supervisorStats[supervisor];
             s.total++;
-            const status = complaint['Status']?.toLowerCase() || '';
-            if (status.includes('close')) s.closed++;
-            else if (status.includes('open')) s.open++;
-            else if (status.includes('pending')) s.pending++;
-            else s.open++;
+            const rawStatus = (complaint['Status'] || 'Unknown').trim();
+            s.statusCounts[rawStatus] = (s.statusCounts[rawStatus] || 0) + 1;
+
+            if (rawStatus.toLowerCase().includes('close')) s.closed++;
         });
 
         // Calculate Rate & Format
         const dataToExport = Object.values(supervisorStats).map((s, index) => {
             const rate = s.total > 0 ? (s.closed / s.total) * 100 : 0;
-            return {
+            const row: any = {
                 'Sr No': index + 1,
                 'Supervisor Name': s.supervisor,
                 'Total Complaints': s.total,
                 'Closed': s.closed,
-                'Open': s.open,
-                'Pending': s.pending,
-                'Closure Rate': `${rate.toFixed(1)}%`
             };
+            uniqueStatuses.forEach(st => row[st] = s.statusCounts[st]);
+            row['Closure Rate'] = `${rate.toFixed(1)}%`;
+            return row;
         }).sort((a, b) => b['Total Complaints'] - a['Total Complaints']);
 
         exportToExcel(dataToExport, `${department}_Supervisor_Performance_Report`);

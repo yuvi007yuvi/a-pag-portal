@@ -1,0 +1,143 @@
+No.,Zone,Ward,Department,Supervisor Name,Officer Name
+1,Aurangabad,01-Birjapur,Sanitation,Yogesh Chaudhary SS1,Shri Nihal Singh
+2,Mathura,02-Ambedkar Nagar,Sanitation,Gopal SS2,Shri Saurav Agarwal
+3,Bhuteshwar,03-Girdharpur,Sanitation,Ravikant SS3,Shri Rajbahadur Singh
+4,Mathura,04-Ishapur Yamunapar,Sanitation,Rajesh SS4,Shri Saurav Agarwal
+5,Mathura,05-Bharatpur Gate,Sanitation,Mahendra SS5,Shri Rajkumar Lawaniya
+6,Aurangabad,06-Aduki,Sanitation,Devendra SS6,Shri Nihal Singh
+7,Mathura,07-Lohvan,Sanitation,Vijay SS7,Shri Saurav Agarwal
+8,Vrindavan,08-Atas,Sanitation,Jitendra SS8,Shri Rakesh Kumar
+9,Vrindavan,09-Gandhi Nagar,Sanitation,Jitendra SS9,Shri Subash Chand
+10,Aurangabad,10-Aurangabad First,Sanitation,Munesh SS10,Shri Nihal Singh
+11,Aurangabad,11-Tarsi,Sanitation,Ramsanehi SS11,Shri Nihal Singh
+12,Bhuteshwar,12-Radhe Shyam Colony,Sanitation,Kanhaiya SS12,Shri Suresh Chand
+13,Vrindavan,13-Sunrakh,Sanitation,Bacchu Singh SS13,Shri Rakesh Kumar
+14,Mathura,14-Lakshmi Nagar Yamunapar,Sanitation,Gopal Prashad Saini SS14,Shri Saurav Agarwal
+15,Aurangabad,15-Maholi First,Sanitation,Umesh SS15,Shri Rajbahadur Singh
+16,Bhuteshwar,16-Bakalpur,Sanitation,Surajpal SS16,Shri Rajbahadur Singh
+17,Bhuteshwar,17-Bairaagpura,Sanitation,Peetam Singh SS17,Shri Suresh Chand
+18,Mathura,18-General ganj,Sanitation,Premchand SS18,Shri Rajkumar Lawaniya
+19,Mathura,19-Ramnagar Yamunapar,Sanitation,Rajesh SS19,Shri Saurav Agarwal
+20,Bhuteshwar,20-Krishna Nagar First,Sanitation,Sanjesh SS20,Shri Vipin Singh
+21,Vrindavan,21-Chaitanya Bihar,Sanitation,Rinku SS21,Shri Rakesh Kumar
+22,Mathura,22-Badhri Nagar,Sanitation,Brijesh SS22,Shri Suresh Chand
+23,Mathura,23-Aheer Pada,Sanitation,Kunjilal SS23,Shri Saurav Agarwal
+24,Bhuteshwar,24-Sarai Azamabad,Sanitation,Sanjay &  Aadesh SS24,Shri Suresh Chand
+25,Vrindavan,25-Chharaura,Sanitation,Jimmy SS25,Shri Rakesh Kumar
+26,Mathura,26-Naya Nagla,Sanitation,Satyam SS26,Shri Saurav Agarwal
+27,Aurangabad,27-Baad,Sanitation,Ravindra SS27,Shri Nihal Singh
+28,Aurangabad,28-Aurangabad Second,Sanitation,Mukesh SS28,Shri Nihal Singh
+29,Aurangabad,29-Koyla Alipur,Sanitation,Ramavtar SS29,Shri Nihal Singh
+30,Bhuteshwar,30-Krishna Nagar Second,Sanitation,Rohit  SS30,Shri Vipin Singh
+31,Bhuteshwar,31-Navneet Nagar,Sanitation,Sonu SS31,Shri Vipin Singh
+32,Aurangabad,32-Ranchibagar,Sanitation,Naresh SS32,Shri Nihal Singh
+33,Aurangabad,33-Palikhera,Sanitation,Ajaykumar SS33,Shri Rajbahadur Singh
+34,Vrindavan,34-Radhaniwas,Sanitation,Dharmendra  SS34,Shri Subash Chand
+35,Mathura,35-Bankhandi,Sanitation,Chandprakash SS35,Shri Rajkumar Lawaniya
+36,Bhuteshwar,36-Jaisingh Pura,Sanitation,Raman SS36,Shri Suresh Chand
+37,Bhuteshwar,37-Baldevpuri,Sanitation,Sanjeev SS37,Shri Vipin Singh
+38,Aurangabad,38-Civil lines,Sanitation,Jagdeesh SS38,Shri Saurav Agarwal
+39,Bhuteshwar,39-Mahavidhya Colony,Sanitation,Chandrashekhar SS39,Shri Suresh Chand
+40,Mathura,40-Rajkumar,Sanitation,Shishupal  SS40,Shri Suresh Chand
+41,Aurangabad,41-Dhaulipiau,Sanitation,Sanjay SS41,Shri Saurav Agarwal
+42,Mathura,42-Manoharpur,Sanitation,Harilal SS42,Shri Rajkumar Lawaniya
+43,Bhuteshwar,43-Ganeshra,Sanitation,Hanif SS43,Shri Rajbahadur Singh
+44,Bhuteshwar,44-Radhika Bihar,Sanitation,Mukesh SS44,Shri Vipin Singh
+45,Bhuteshwar,45-Birla Mandir,Sanitation,Nemichand Chauhan SS45,Shri Suresh Chand
+46,Bhuteshwar,46-Radha Nagar,Sanitation,Rajan SS46,Shri Vipin Singh
+47,Bhuteshwar,47-Dwarkapuri,Sanitation,Madhukar SS47,Shri Vipin Singh
+48,Bhuteshwar,48-Satoha Asangpur,Sanitation,Anurag SS48,Shri Rajbahadur Singh
+49,Mathura,49-Daimpiriyal Nagar,Sanitation,Premchand & Rajkumar SS49,Shri Rajkumar Lawaniya
+50,Vrindavan,50-Patharpura,Sanitation,Aakash SS50,Shri Subash Chand
+51,Vrindavan,51-Gaushala Nagar,Sanitation,Kishan Singh SS51,Shri Subash Chand
+52,Aurangabad,52-Chandrapuri,Sanitation,Ashish SS52,Shri Saurav Agarwal
+53,Mathura,53-Krishna puri,Sanitation,Suresh SS53,Shri Saurav Agarwal
+54,Bhuteshwar,54-Pratap Nagar,Sanitation,Mahesh SS54,Shri Vipin Singh
+55,Bhuteshwar,54-Pratam Nagar,Sanitation,Mahesh SS54,Shri Vipin Singh
+56,Bhuteshwar,55-Govind Nagar,Sanitation,Dinesh SS55,Shri Vipin Singh
+57,Bhuteshwar,56-Mandi Randas,Sanitation,Nashir SS56,Shri Rajkumar Lawaniya
+58,Aurangabad,57-Balajipuram,Sanitation,Makrand SS57,Shri Saurav Agarwal
+59,Bhuteshwar,58-Gau Ghat,Sanitation,Preetam SS58,Shri Rajkumar Lawaniya
+60,Aurangabad,59-Maholi Second,Sanitation,Dharmveer SS59,Shri Rajbahadur Singh
+61,Bhuteshwar,60-Jagannath Puri,Sanitation,Gyan SS60,Shri Suresh Chand
+62,Mathura,61-Chaubia para,Sanitation,Suresh Chand SS61,Shri Rajkumar Lawaniya
+63,Vrindavan,62-Mathura Darwaza,Sanitation,Ranjeet SS62,Shri Subash Chand
+64,Mathura,63-Maliyaan Sadar,Sanitation,Shubash SS63,Shri Saurav Agarwal
+65,Mathura,64-Ghati Bahalray,Sanitation,Mahendra SS64,Shri Rajkumar Lawaniya
+66,Mathura,65-Holi Gali,Sanitation,Suresh Sethi SS65,Shri Rajkumar Lawaniya
+67,Vrindavan,66-Keshighat,Sanitation,Madan SS66,Shri Subash Chand
+68,Vrindavan,67-Kemar Van,Sanitation,Jawala Singh SS67,Shri Rakesh Kumar
+69,Aurangabad,68-Shanti Nagar,Sanitation,Umesh SS68,Shri Vipin Singh
+70,Vrindavan,69-Ratan Chhatri,Sanitation,Bacchu Singh SS69,Shri Rakesh Kumar
+71,Vrindavan,70-Biharipur,Sanitation,Vivek SS70,Shri Subash Chand
+72,Aurangabad,01-Birjapur,Civil,Akshay NS1,Shri Sandeep Kumar
+73,Mathura,02-Ambedkar Nagar,Civil,Amrish NS2,Shri Umesh Kumar
+74,Bhuteshwar,03-Girdharpur,Civil,Mukesh NS3,Shri Vibhor Vishwakarma
+75,Mathura,04-Ishapur Yamunapar,Civil,Amrish NS4,Shri Umesh Kumar
+76,Mathura,05-Bharatpur Gate,Civil,Amit NS5,Shri Imran Habib Ansari
+77,Aurangabad,06-Aduki,Civil,Sanjay NS6,Shri Sandeep Kumar
+78,Mathura,07-Lohvan,Civil,Amrish NS7,Shri Umesh Kumar
+79,Vrindavan,08-Atas,Civil,Vijay NS8,Shri Arun Kumar
+80,Vrindavan,09-Gandhi Nagar,Civil,Vijay NS9,Shri Arun Kumar
+81,Aurangabad,10-Aurangabad First,Civil,Akshay NS10,Shri Sandeep Kumar
+82,Aurangabad,11-Tarsi,Civil,Sanjay NS11,Shri Sandeep Kumar
+83,Bhuteshwar,12-Radhe Shyam Colony,Civil,Ankit NS12,Shri Vibhor Vishwakarma
+84,Vrindavan,13-Sunrakh,Civil,Vijay NS13,Shri Arun Kumar
+85,Mathura,14-Lakshmi Nagar Yamunapar,Civil,Amrish NS14,Shri Umesh Kumar
+86,Aurangabad,15-Maholi First,Civil,Sanjay NS15,Shri Sandeep Kumar
+87,Bhuteshwar,16-Bakalpur,Civil,Mukesh NS16,Shri Vibhor Vishwakarma
+88,Bhuteshwar,17-Bairaagpura,Civil,Ankit NS17,Shri Vibhor Vishwakarma
+89,Mathura,18-General ganj,Civil,Hemant NS18,Shri Umesh Kumar
+90,Mathura,19-Ramnagar Yamunapar,Civil,Praveen NS19,Shri Umesh Kumar
+91,Bhuteshwar,20-Krishna Nagar First,Civil,Bacchu Singh NS20,Shri Vibhor Vishwakarma
+92,Vrindavan,21-Chaitanya Bihar,Civil,Tejveer NS21,Shri Arun Kumar
+93,Mathura,22-Badhri Nagar,Civil,Amit NS22,Shri Imran Habib Ansari
+94,Mathura,23-Aheer Pada,Civil,Praveen NS23,Shri Umesh Kumar
+95,Bhuteshwar,24-Sarai Azamabad,Civil,Ankit NS24,Shri Vibhor Vishwakarma
+96,Vrindavan,25-Chharaura,Civil,Tejveer NS25,Shri Arun Kumar
+97,Mathura,26-Naya Nagla,Civil,Bacchu Singh NS26,Shri Imran Habib Ansari
+98,Aurangabad,27-Baad,Civil,Sanjay NS27,Shri Sandeep Kumar
+99,Aurangabad,28-Aurangabad Second,Civil,Akshay NS28,Shri Sandeep Kumar
+100,Aurangabad,29-Koyla Alipur,Civil,Sanjay NS29,Shri Sandeep Kumar
+101,Bhuteshwar,30-Krishna Nagar Second,Civil,Bacchu Singh NS30,Shri Vibhor Vishwakarma
+102,Bhuteshwar,31-Navneet Nagar,Civil,Amit NS31,Shri Vibhor Vishwakarma
+103,Aurangabad,32-Ranchibagar,Civil,Sanjay NS32,Shri Sandeep Kumar
+104,Aurangabad,33-Palikhera,Civil,Sanjay NS33,Shri Sandeep Kumar
+105,Vrindavan,34-Radhaniwas,Civil,Tejveer NS34,Shri Arun Kumar
+106,Mathura,35-Bankhandi,Civil,Bacchu Singh NS35,Shri Imran Habib Ansari
+107,Bhuteshwar,36-Jaisingh Pura,Civil,Ankit NS36,Shri Vibhor Vishwakarma
+108,Bhuteshwar,37-Baldevpuri,Civil,Mukesh NS37,Shri Vibhor Vishwakarma
+109,Aurangabad,38-Civil lines,Civil,Akshay NS38,Shri Sandeep Kumar
+110,Bhuteshwar,39-Mahavidhya Colony,Civil,Ankit NS39,Shri Vibhor Vishwakarma
+111,Mathura,40-Rajkumar,Civil,Amit NS40,Shri Imran Habib Ansari
+112,Aurangabad,41-Dhaulipiau,Civil,Akshay NS41,Shri Sandeep Kumar
+113,Mathura,42-Manoharpur,Civil,Amit NS42,Shri Imran Habib Ansari
+114,Bhuteshwar,43-Ganeshra,Civil,Mukesh NS43,Shri Vibhor Vishwakarma
+115,Bhuteshwar,44-Radhika Bihar,Civil,Praveen NS44,Shri Vibhor Vishwakarma
+116,Bhuteshwar,45-Birla Mandir,Civil,Ankit NS45,Shri Vibhor Vishwakarma
+117,Bhuteshwar,46-Radha Nagar,Civil,Ankit NS46,Shri Vibhor Vishwakarma
+118,Bhuteshwar,47-Dwarkapuri,Civil,Mukesh NS47,Shri Vibhor Vishwakarma
+119,Bhuteshwar,48-Satoha Asangpur,Civil,Mukesh NS48,Shri Vibhor Vishwakarma
+120,Mathura,49-Daimpiriyal Nagar,Civil,Bacchu Singh NS49,Shri Imran Habib Ansari
+121,Vrindavan,50-Patharpura,Civil,Tejveer NS50,Shri Arun Kumar
+122,Vrindavan,51-Gaushala Nagar,Civil,Tejveer NS51,Shri Arun Kumar
+123,Aurangabad,52-Chandrapuri,Civil,Akshay NS52,Shri Sandeep Kumar
+124,Mathura,53-Krishna puri,Civil,Praveen NS53,Shri Umesh Kumar
+125,Bhuteshwar,54-Pratap Nagar,Civil,Mukesh NS54,Shri Vibhor Vishwakarma
+126,Bhuteshwar,54-Pratam Nagar,Civil,Mukesh NS54,Shri Vibhor Vishwakarma
+127,Bhuteshwar,55-Govind Nagar,Civil,Ankit NS55,Shri Vibhor Vishwakarma
+128,Bhuteshwar,56-Mandi Randas,Civil,Praveen NS56,Shri Vibhor Vishwakarma
+129,Aurangabad,57-Balajipuram,Civil,Akshay NS57,Shri Sandeep Kumar
+130,Bhuteshwar,58-Gau Ghat,Civil,Ankit NS58,Shri Vibhor Vishwakarma
+131,Aurangabad,59-Maholi Second,Civil,Sanjay NS59,Shri Sandeep Kumar
+132,Bhuteshwar,60-Jagannath Puri,Civil,Amit NS60,Shri Vibhor Vishwakarma
+133,Mathura,61-Chaubia para,Civil,Bacchu Singh NS61,Shri Imran Habib Ansari
+134,Vrindavan,62-Mathura Darwaza,Civil,Tejveer NS62,Shri Arun Kumar
+135,Mathura,63-Maliyaan Sadar,Civil,Praveen NS63,Shri Umesh Kumar
+136,Mathura,64-Ghati Bahalray,Civil,Bacchu Singh NS64,Shri Imran Habib Ansari
+137,Mathura,65-Holi Gali,Civil,Hemant NS65,Shri Imran Habib Ansari
+138,Vrindavan,66-Keshighat,Civil,Vijay NS66,Shri Arun Kumar
+139,Vrindavan,67-Kemar Van,Civil,Tejveer NS67,Shri Arun Kumar
+140,Aurangabad,68-Shanti Nagar,Civil,Akshay NS68,Shri Sandeep Kumar
+141,Vrindavan,69-Ratan Chhatri,Civil,Vijay NS69,Shri Arun Kumar
+142,Vrindavan,70-Biharipur,Civil,Vijay NS70,Shri Arun Kumar

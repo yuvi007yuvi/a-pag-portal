@@ -2,14 +2,7 @@ import React, { useState } from 'react';
 import type { ComplaintRecord } from '../utils/dataProcessor';
 import { officerMappings } from '../data/officerMappings';
 
-interface OfficerStats {
-    officer: string;
-    total: number;
-    closed: number;
-    open: number;
-    pending: number;
-    closureRate: number;
-}
+
 
 interface SFIReportTableProps {
     data: ComplaintRecord[];
@@ -17,13 +10,34 @@ interface SFIReportTableProps {
 }
 
 export const SFIReportTable: React.FC<SFIReportTableProps> = ({ data, department }) => {
-    const [sortColumn, setSortColumn] = useState<keyof OfficerStats>('total');
+
+
+    // Normalize statuses for keys (e.g. "In Progress" -> "In Progress")
+    // actually dataProcessor might already normalize. Let's assume we want to collect them all.
+    // Better: Collect unique normalized statuses
+    const uniqueStatuses = Array.from(new Set(data.map(d => {
+        const s = d['Status'] || 'Unknown';
+        // Capitalize first letter of each word? Or just trust data? 
+        // Let's trust data but trim.
+        return s.trim();
+    }))).sort();
+
+    // interface for dynamic usage
+    interface DynamicOfficerStats {
+        officer: string;
+        total: number;
+        closed: number; // Keep track of closed specifically for rate
+        statusCounts: Record<string, number>;
+        closureRate: number;
+        [key: string]: any; // Allow indexing by status name
+    }
+
+    const [sortColumn, setSortColumn] = useState<string>('total');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-    // Initialize all officers from mapping with zero stats
-    const officerStats: Record<string, OfficerStats> = {};
+    // Initialize all officers from mapping
+    const officerStats: Record<string, DynamicOfficerStats> = {};
 
-    // First, add all officers from the mapping, optionally filtered by department
     const relevantMappings = department
         ? officerMappings.filter(m => m.department === department)
         : officerMappings;
@@ -34,61 +48,68 @@ export const SFIReportTable: React.FC<SFIReportTableProps> = ({ data, department
             officer,
             total: 0,
             closed: 0,
-            open: 0,
-            pending: 0,
+            statusCounts: {},
             closureRate: 0,
         };
+        // Initialize 0 for all known statuses (optional, helps table alignment if sparse)
+        uniqueStatuses.forEach(s => officerStats[officer].statusCounts[s] = 0);
     });
 
-    // Then, populate with actual complaint data
+    // Populate data
     data.forEach(complaint => {
         const officer = complaint.assignedOfficer;
         if (!officer) return;
 
-        // If officer not in mapping, add them
+        // If officer not in mapping (e.g. from another dept), add them?
+        // For SFI report we usually filter by department in parent, but if data passes through:
         if (!officerStats[officer]) {
             officerStats[officer] = {
                 officer,
                 total: 0,
                 closed: 0,
-                open: 0,
-                pending: 0,
+                statusCounts: {},
                 closureRate: 0,
             };
+            uniqueStatuses.forEach(s => officerStats[officer].statusCounts[s] = 0);
         }
 
         const stats = officerStats[officer];
         stats.total++;
 
-        const status = complaint['Status']?.toLowerCase() || '';
+        const rawStatus = (complaint['Status'] || 'Unknown').trim();
+        stats.statusCounts[rawStatus] = (stats.statusCounts[rawStatus] || 0) + 1;
 
-        if (status.includes('close')) {
+        // "closed" counter for rate calculation - strict check or includes?
+        // Usually closure rate is based on "Close" or similar.
+        if (rawStatus.toLowerCase().includes('close')) {
             stats.closed++;
-        } else if (status.includes('open')) {
-            stats.open++;
-        } else if (status.includes('pending')) {
-            stats.pending++;
-        } else {
-            stats.open++; // Count other statuses as open
         }
     });
 
-    // Calculate closure rates
+    // Calculate rates
     Object.values(officerStats).forEach(stats => {
         stats.closureRate = stats.total > 0 ? (stats.closed / stats.total) * 100 : 0;
     });
 
-    // Convert to array and sort
+    // Sort
     let statsArray = Object.values(officerStats);
-
     statsArray.sort((a, b) => {
-        const aVal = a[sortColumn];
-        const bVal = b[sortColumn];
+        let aVal: any = a[sortColumn];
+        let bVal: any = b[sortColumn];
+
+        // Handle sorting by specific status column
+        if (uniqueStatuses.includes(sortColumn)) {
+            aVal = a.statusCounts[sortColumn] || 0;
+            bVal = b.statusCounts[sortColumn] || 0;
+        }
+
         const multiplier = sortDirection === 'asc' ? 1 : -1;
-        return aVal > bVal ? multiplier : -multiplier;
+        if (aVal > bVal) return multiplier;
+        if (aVal < bVal) return -multiplier;
+        return 0;
     });
 
-    const handleSort = (column: keyof OfficerStats) => {
+    const handleSort = (column: string) => {
         if (sortColumn === column) {
             setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
         } else {
@@ -97,7 +118,7 @@ export const SFIReportTable: React.FC<SFIReportTableProps> = ({ data, department
         }
     };
 
-    const SortIcon = ({ column }: { column: keyof OfficerStats }) => {
+    const SortIcon = ({ column }: { column: string }) => {
         if (sortColumn !== column) return <span className="text-slate-400">⇅</span>;
         return <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>;
     };
@@ -105,43 +126,30 @@ export const SFIReportTable: React.FC<SFIReportTableProps> = ({ data, department
     return (
         <div className="bg-white border border-slate-300 overflow-hidden shadow-sm rounded-lg">
             <div className="px-4 py-3 border-b border-slate-300 bg-slate-50">
-                <h3 className="font-semibold text-slate-800 text-lg">SFI/Officer Performance Report</h3>
-                <p className="text-sm text-slate-500">All officers including those with no assigned complaints</p>
+                <h3 className="font-semibold text-slate-800 text-lg">OFFICERS WISE Performance Report</h3>
+                <p className="text-sm text-slate-500">All officers breakdown by status</p>
             </div>
             <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                 <table className="w-full text-sm text-left border-collapse border border-slate-300 relative">
                     <thead className="text-xs text-slate-700 uppercase bg-slate-100 z-10 sticky top-0 shadow-sm">
                         <tr>
-                            <th className="border border-slate-300 px-2 py-1 text-center w-16 bg-slate-100">Sr. No.</th>
-                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 bg-slate-100" onClick={() => handleSort('officer')}>
-                                <div className="flex items-center gap-1">
-                                    Officer Name <SortIcon column="officer" />
-                                </div>
+                            <th className="border border-slate-300 px-2 py-1 text-center w-12 bg-slate-100">Sr.</th>
+                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 bg-slate-100 min-w-[150px]" onClick={() => handleSort('officer')}>
+                                <div className="flex items-center gap-1">Officer <SortIcon column="officer" /></div>
                             </th>
-                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 text-center w-24 bg-slate-100" onClick={() => handleSort('total')}>
-                                <div className="flex items-center justify-center gap-1">
-                                    Total <SortIcon column="total" />
-                                </div>
+                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 text-center w-20 bg-slate-100" onClick={() => handleSort('total')}>
+                                <div className="flex items-center justify-center gap-1">Total <SortIcon column="total" /></div>
                             </th>
-                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 text-center w-24 bg-slate-100" onClick={() => handleSort('closed')}>
-                                <div className="flex items-center justify-center gap-1">
-                                    Closed <SortIcon column="closed" />
-                                </div>
-                            </th>
-                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 text-center w-24 bg-slate-100" onClick={() => handleSort('open')}>
-                                <div className="flex items-center justify-center gap-1">
-                                    Open <SortIcon column="open" />
-                                </div>
-                            </th>
-                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 text-center w-24 bg-slate-100" onClick={() => handleSort('pending')}>
-                                <div className="flex items-center justify-center gap-1">
-                                    Pending <SortIcon column="pending" />
-                                </div>
-                            </th>
-                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 text-center w-32 bg-slate-100" onClick={() => handleSort('closureRate')}>
-                                <div className="flex items-center justify-center gap-1">
-                                    Closure Rate <SortIcon column="closureRate" />
-                                </div>
+
+                            {/* Dynamic Status Columns */}
+                            {uniqueStatuses.map(status => (
+                                <th key={status} className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 text-center min-w-[80px] bg-slate-100" onClick={() => handleSort(status)}>
+                                    <div className="flex items-center justify-center gap-1">{status} <SortIcon column={status} /></div>
+                                </th>
+                            ))}
+
+                            <th className="border border-slate-300 px-2 py-1 cursor-pointer hover:bg-slate-200 text-center w-24 bg-slate-100" onClick={() => handleSort('closureRate')}>
+                                <div className="flex items-center justify-center gap-1">Rate <SortIcon column="closureRate" /></div>
                             </th>
                         </tr>
                     </thead>
@@ -151,17 +159,26 @@ export const SFIReportTable: React.FC<SFIReportTableProps> = ({ data, department
                                 <td className="border border-slate-300 px-2 py-1 text-center font-medium text-slate-600">{index + 1}</td>
                                 <td className="border border-slate-300 px-2 py-1 font-medium text-slate-800">{stats.officer}</td>
                                 <td className="border border-slate-300 px-2 py-1 text-center font-semibold text-slate-900 bg-slate-50">
-                                    {stats.total === 0 ? <span className="text-slate-400">-</span> : stats.total}
+                                    {stats.total === 0 ? '-' : stats.total}
                                 </td>
-                                <td className="border border-slate-300 px-2 py-1 text-center text-green-700 bg-green-50">
-                                    {stats.closed}
-                                </td>
-                                <td className="border border-slate-300 px-2 py-1 text-center text-amber-700 bg-amber-50">
-                                    {stats.open}
-                                </td>
-                                <td className="border border-slate-300 px-2 py-1 text-center text-blue-700 bg-blue-50">
-                                    {stats.pending}
-                                </td>
+
+                                {/* Dynamic Status Counts */}
+                                {uniqueStatuses.map(status => {
+                                    const count = stats.statusCounts[status] || 0;
+                                    // Optional: Color coding for common statuses?
+                                    let textColor = 'text-slate-600';
+                                    let bgColor = '';
+                                    if (status.toLowerCase().includes('close')) { textColor = 'text-green-700'; bgColor = 'bg-green-50'; }
+                                    else if (status.toLowerCase().includes('open')) { textColor = 'text-amber-700'; bgColor = 'bg-amber-50'; }
+                                    else if (status.toLowerCase().includes('pending')) { textColor = 'text-blue-700'; bgColor = 'bg-blue-50'; }
+
+                                    return (
+                                        <td key={status} className={`border border-slate-300 px-2 py-1 text-center ${textColor} ${bgColor}`}>
+                                            {count || '-'}
+                                        </td>
+                                    );
+                                })}
+
                                 <td className={`border border-slate-300 px-2 py-1 text-center font-semibold ${stats.total === 0 ? 'text-slate-400' :
                                     stats.closureRate >= 80 ? 'text-green-700 bg-green-100' :
                                         stats.closureRate >= 60 ? 'text-yellow-700 bg-yellow-100' :

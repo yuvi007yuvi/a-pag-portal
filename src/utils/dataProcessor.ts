@@ -28,6 +28,21 @@ export interface Stats {
     supervisors: Record<string, number>;
 }
 
+const normalizeSupervisorName = (name: string): string => {
+    if (!name) return '';
+    // Extract Base Name and Type (SS/NS) from "Name SS12"
+    // This merges "Jitendra SS8" & "Jitendra SS9" -> "Jitendra SS"
+    // But keeps "Sanjay SS" and "Sanjay NS" distinct
+    const match = name.match(/^(.*?)\s+(SS|NS)\d+/i);
+    if (match) {
+        return `${match[1].trim()} ${match[2].toUpperCase()}`;
+    }
+    // Fallback: remove simple suffixes matching the pattern if simpler regex needed, 
+    // or just return trimmed name if it doesn't match standard format.
+    // For safety, if it doesn't match the strict SS/NS pattern, check loose pattern
+    return name.replace(/\s+(?:SS|NS)\d+.*$/i, '').trim();
+};
+
 export const parseCSV = (file: File): Promise<ComplaintRecord[]> => {
     return new Promise((resolve, reject) => {
         Papa.parse(file, {
@@ -41,6 +56,11 @@ export const parseCSV = (file: File): Promise<ComplaintRecord[]> => {
                     // NORMALIZE: Fix variations of "Muds -Silt sticking Road Side"
                     if (record['complaintsubtype'] && record['complaintsubtype'].includes('Muds')) {
                         record['complaintsubtype'] = 'Muds -Silt sticking Road Side';
+                    }
+
+                    // NORMALIZE: Fix "54-Pratam Nagar" typo in Ward
+                    if (record['Ward'] && record['Ward'].includes('54-Pratam Nagar')) {
+                        record['Ward'] = record['Ward'].replace('54-Pratam Nagar', '54-Pratap Nagar');
                     }
                 });
 
@@ -68,7 +88,8 @@ export const parseCSV = (file: File): Promise<ComplaintRecord[]> => {
                     );
                     if (officer) {
                         record.assignedOfficer = officer.officer;
-                        record.assignedSupervisor = officer.supervisor;
+                        // Normalize supervisor name to aggregate same person across wards
+                        record.assignedSupervisor = normalizeSupervisorName(officer.supervisor);
                     }
                 });
                 resolve(records);
@@ -121,7 +142,9 @@ export const calculateStats = (data: ComplaintRecord[]): Stats => {
 
         // Supervisor stats
         if (row.assignedSupervisor) {
-            stats.supervisors[row.assignedSupervisor] = (stats.supervisors[row.assignedSupervisor] || 0) + 1;
+            // It should already be normalized in parseCSV, but we use the value in the record.
+            const supName = row.assignedSupervisor;
+            stats.supervisors[supName] = (stats.supervisors[supName] || 0) + 1;
         }
     });
 

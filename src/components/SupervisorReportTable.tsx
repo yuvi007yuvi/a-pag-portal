@@ -8,80 +8,77 @@ interface Props {
     department?: 'Sanitation' | 'Civil';
 }
 
-interface SupervisorStats {
-    supervisor: string;
-    total: number;
-    closed: number;
-    open: number;
-    pending: number;
-    closureRate: number;
-}
+
 
 export const SupervisorReportTable: React.FC<Props> = ({ data, department }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortConfig, setSortConfig] = useState<{ key: keyof SupervisorStats; direction: 'asc' | 'desc' } | null>({ key: 'total', direction: 'desc' });
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'total', direction: 'desc' });
+
+    // Identify unique statuses
+    const uniqueStatuses = useMemo(() => Array.from(new Set(data.map(d => {
+        const s = d['Status'] || 'Unknown';
+        return s.trim();
+    }))).sort(), [data]);
+
+    interface DynamicSupervisorStats {
+        supervisor: string;
+        total: number;
+        closed: number;
+        statusCounts: Record<string, number>;
+        closureRate: number;
+        [key: string]: any;
+    }
 
     const stats = useMemo(() => {
-        const statsMap: Record<string, SupervisorStats> = {};
+        const statsMap: Record<string, DynamicSupervisorStats> = {};
 
-        // 1. Initialize all mapped supervisors with 0 counts, optionally filtered
         const relevantMappings = department
             ? officerMappings.filter(m => m.department === department)
             : officerMappings;
 
         const uniqueSupervisors = new Set(relevantMappings.map(m => m.supervisor));
         uniqueSupervisors.forEach(supervisor => {
-            // Normalize supervisor names if needed (some have '&' or multiple names)
-            // Ideally we keep them as is from the mapping to match the 'assignedSupervisor' logic
             statsMap[supervisor] = {
                 supervisor,
                 total: 0,
                 closed: 0,
-                open: 0,
-                pending: 0,
+                statusCounts: {},
                 closureRate: 0
             };
+            uniqueStatuses.forEach(s => statsMap[supervisor].statusCounts[s] = 0);
         });
 
-        // 2. Aggregate counts from actual data
         data.forEach(accord => {
             const supervisor = accord.assignedSupervisor;
             if (!supervisor) return;
 
-            // If supervisor exists in mapping (it should), update stats
-            // If not (e.g. data has a supervisor name slightly different but findOfficer failed?), we skip or add new?
-            // "findOfficer" normalizes mappings, so assignedSupervisor should match mapping values.
             if (!statsMap[supervisor]) {
-                // Should technically not happen if mappings are complete, but safe fallback
                 statsMap[supervisor] = {
                     supervisor,
                     total: 0,
                     closed: 0,
-                    open: 0,
-                    pending: 0,
+                    statusCounts: {},
                     closureRate: 0
                 };
+                uniqueStatuses.forEach(s => statsMap[supervisor].statusCounts[s] = 0);
             }
 
             const s = statsMap[supervisor];
             s.total++;
 
-            const status = accord['Status']?.toLowerCase() || '';
-            if (status.includes('close')) s.closed++;
-            else if (status.includes('open')) s.open++;
-            // 'pending' is sometimes separate or part of open depending on definitions. 
-            // In SFITable logic: if status has 'pending' -> pending. else open.
-            else if (status.includes('pending')) s.pending++;
-            else s.open++; // Default fallback
+            const rawStatus = (accord['Status'] || 'Unknown').trim();
+            s.statusCounts[rawStatus] = (s.statusCounts[rawStatus] || 0) + 1;
+
+            if (rawStatus.toLowerCase().includes('close')) s.closed++;
         });
 
-        // 3. Calculate Rates
+        // Calculate Rates
         Object.values(statsMap).forEach(s => {
             s.closureRate = s.total > 0 ? (s.closed / s.total) * 100 : 0;
         });
 
         return Object.values(statsMap);
-    }, [data]);
+    }, [data, department, uniqueStatuses]);
 
     const filteredStats = useMemo(() => {
         return stats.filter(s =>
@@ -93,22 +90,30 @@ export const SupervisorReportTable: React.FC<Props> = ({ data, department }) => 
         if (!sortConfig) return filteredStats;
 
         return [...filteredStats].sort((a, b) => {
-            if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
-            if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+            let aVal = a[sortConfig.key];
+            let bVal = b[sortConfig.key];
+
+            // Handle dynamic status keys
+            if (uniqueStatuses.includes(sortConfig.key)) {
+                aVal = a.statusCounts[sortConfig.key] || 0;
+                bVal = b.statusCounts[sortConfig.key] || 0;
+            }
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [filteredStats, sortConfig]);
+    }, [filteredStats, sortConfig, uniqueStatuses]);
 
-    const handleSort = (key: keyof SupervisorStats) => {
-        let direction: 'asc' | 'desc' = 'desc'; // Default desc for numbers usually
-
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'desc';
         if (sortConfig && sortConfig.key === key && sortConfig.direction === 'desc') {
             direction = 'asc';
         }
         setSortConfig({ key, direction });
     };
 
-    const SortIcon = ({ column }: { column: keyof SupervisorStats }) => {
+    const SortIcon = ({ column }: { column: string }) => {
         if (sortConfig?.key !== column) return <ArrowUpDown className="w-4 h-4 text-slate-400 ml-1 inline" />;
         return sortConfig.direction === 'asc'
             ? <ArrowUp className="w-4 h-4 text-blue-600 ml-1 inline" />
@@ -136,40 +141,21 @@ export const SupervisorReportTable: React.FC<Props> = ({ data, department }) => 
                     <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
                         <tr>
                             <th className="px-6 py-4 w-16">Sr No</th>
-                            <th
-                                className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors"
-                                onClick={() => handleSort('supervisor')}
-                            >
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('supervisor')}>
                                 Supervisor Name <SortIcon column="supervisor" />
                             </th>
-                            <th
-                                className="px-6 py-4 text-center cursor-pointer hover:bg-slate-100 transition-colors"
-                                onClick={() => handleSort('total')}
-                            >
+                            <th className="px-6 py-4 text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('total')}>
                                 Total Complaints <SortIcon column="total" />
                             </th>
-                            <th
-                                className="px-6 py-4 text-center cursor-pointer hover:bg-slate-100 transition-colors text-green-700"
-                                onClick={() => handleSort('closed')}
-                            >
-                                Closed <SortIcon column="closed" />
-                            </th>
-                            <th
-                                className="px-6 py-4 text-center cursor-pointer hover:bg-slate-100 transition-colors text-red-600"
-                                onClick={() => handleSort('open')}
-                            >
-                                Open <SortIcon column="open" />
-                            </th>
-                            <th
-                                className="px-6 py-4 text-center cursor-pointer hover:bg-slate-100 transition-colors text-yellow-600"
-                                onClick={() => handleSort('pending')}
-                            >
-                                Pending <SortIcon column="pending" />
-                            </th>
-                            <th
-                                className="px-6 py-4 text-center cursor-pointer hover:bg-slate-100 transition-colors bg-blue-50"
-                                onClick={() => handleSort('closureRate')}
-                            >
+
+                            {/* Dynamic Status Columns */}
+                            {uniqueStatuses.map(status => (
+                                <th key={status} className="px-6 py-4 text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort(status)}>
+                                    {status} <SortIcon column={status} />
+                                </th>
+                            ))}
+
+                            <th className="px-6 py-4 text-center cursor-pointer hover:bg-slate-100 transition-colors bg-blue-50" onClick={() => handleSort('closureRate')}>
                                 Closure Rate <SortIcon column="closureRate" />
                             </th>
                         </tr>
@@ -180,9 +166,22 @@ export const SupervisorReportTable: React.FC<Props> = ({ data, department }) => 
                                 <td className="px-6 py-4 font-medium text-slate-500">{index + 1}</td>
                                 <td className="px-6 py-4 font-semibold text-slate-900">{stat.supervisor}</td>
                                 <td className="px-6 py-4 text-center font-bold text-slate-800 bg-slate-50/50">{stat.total}</td>
-                                <td className="px-6 py-4 text-center text-green-600 font-medium bg-green-50/30">{stat.closed}</td>
-                                <td className="px-6 py-4 text-center text-red-600 font-medium bg-red-50/30">{stat.open}</td>
-                                <td className="px-6 py-4 text-center text-yellow-600 font-medium bg-yellow-50/30">{stat.pending}</td>
+
+                                {/* Dynamic Status Counts */}
+                                {uniqueStatuses.map(status => {
+                                    const count = stat.statusCounts[status] || 0;
+                                    let colorClass = 'text-slate-600 bg-slate-50/30';
+                                    if (status.toLowerCase().includes('close')) colorClass = 'text-green-600 bg-green-50/30 font-medium';
+                                    else if (status.toLowerCase().includes('open')) colorClass = 'text-red-600 bg-red-50/30 font-medium';
+                                    else if (status.toLowerCase().includes('pending')) colorClass = 'text-yellow-600 bg-yellow-50/30 font-medium';
+
+                                    return (
+                                        <td key={status} className={`px-6 py-4 text-center ${colorClass}`}>
+                                            {count}
+                                        </td>
+                                    );
+                                })}
+
                                 <td className="px-6 py-4 text-center font-bold bg-blue-50/30 text-blue-700">
                                     {stat.total > 0 ? (
                                         <span className={`px-2 py-1 rounded ${stat.closureRate >= 80 ? 'bg-green-100 text-green-800' :
@@ -199,7 +198,7 @@ export const SupervisorReportTable: React.FC<Props> = ({ data, department }) => 
                         ))}
                         {sortedStats.length === 0 && (
                             <tr>
-                                <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                                <td colSpan={uniqueStatuses.length + 4} className="px-6 py-12 text-center text-slate-500">
                                     No supervisors found matching "{searchTerm}"
                                 </td>
                             </tr>

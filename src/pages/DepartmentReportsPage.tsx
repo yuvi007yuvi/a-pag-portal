@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
-import { Building2, Droplet, FileText } from 'lucide-react';
+import { Building2, Droplet, FileText, Trash2 } from 'lucide-react';
 import { ReportHeader } from '../components/ReportHeader';
 import { ExportMenu } from '../components/ExportMenu';
 import { exportToJPEG, exportToPDF, exportToExcel } from '../utils/exportUtils';
@@ -8,15 +8,15 @@ import { exportToJPEG, exportToPDF, exportToExcel } from '../utils/exportUtils';
 interface DepartmentStats {
     total: number;
     closed: number;
-    open: number;
-    pending: number;
+    // open/pending removed in favor of dynamic mapping or calculated 'others'
+    statusCounts: Record<string, number>;
     closureRate: number;
     officers: Set<string>;
 }
 
 export const DepartmentReportsPage: React.FC = () => {
     const { filteredData, stats, dateFrom, dateTo } = useData();
-    const [selectedDept, setSelectedDept] = useState<'Sanitation' | 'Civil' | 'Both'>('Both');
+    const [selectedDept, setSelectedDept] = useState<'Sanitation' | 'Civil' | 'C&D' | 'Both'>('Both');
 
     if (!stats) {
         return (
@@ -26,35 +26,45 @@ export const DepartmentReportsPage: React.FC = () => {
         );
     }
 
+    // Identify unique statuses
+    const uniqueStatuses = useMemo(() => Array.from(new Set(filteredData.map(d => {
+        const s = d['Status'] || 'Unknown';
+        return s.trim();
+    }))).sort(), [filteredData]);
+
     // Calculate department-wise statistics
-    const calculateDepartmentStats = (department: 'Sanitation' | 'Civil'): DepartmentStats => {
+    const calculateDepartmentStats = (department: 'Sanitation' | 'Civil' | 'C&D'): DepartmentStats => {
         const deptData = filteredData.filter(complaint => {
             const type = complaint['Complainttype'] || '';
+            const subtype = complaint['complaintsubtype'] || '';
+
             const sanitationTypes = ['Door To Door', 'Road Sweeping', 'Drain Cleaning', 'Sanitation', 'Dead Animals'];
             const civilTypes = ['STREET LIGHT', 'Civil', 'Water Logging'];
+            const cndType = "Illegal Dumping of C&D waste";
 
             if (department === 'Sanitation') {
-                return sanitationTypes.some(t => type.includes(t));
+                return sanitationTypes.some(t => type.includes(t)) && !subtype.includes(cndType);
+            } else if (department === 'Civil') {
+                return civilTypes.some(t => type.includes(t)) && !subtype.includes(cndType);
             } else {
-                return civilTypes.some(t => type.includes(t));
+                return subtype.includes(cndType);
             }
         });
 
         const stats: DepartmentStats = {
             total: deptData.length,
             closed: 0,
-            open: 0,
-            pending: 0,
+            statusCounts: {},
             closureRate: 0,
             officers: new Set(),
         };
+        uniqueStatuses.forEach(s => stats.statusCounts[s] = 0);
 
         deptData.forEach(complaint => {
-            const status = complaint['Status']?.toLowerCase() || '';
-            if (status.includes('close')) stats.closed++;
-            else if (status.includes('open')) stats.open++;
-            else if (status.includes('pending')) stats.pending++;
-            else stats.open++;
+            const rawStatus = (complaint['Status'] || 'Unknown').trim();
+            stats.statusCounts[rawStatus] = (stats.statusCounts[rawStatus] || 0) + 1;
+
+            if (rawStatus.toLowerCase().includes('close')) stats.closed++;
 
             if (complaint.assignedOfficer) {
                 stats.officers.add(complaint.assignedOfficer);
@@ -67,6 +77,7 @@ export const DepartmentReportsPage: React.FC = () => {
 
     const sanitationStats = calculateDepartmentStats('Sanitation');
     const civilStats = calculateDepartmentStats('Civil');
+    const cndStats = calculateDepartmentStats('C&D');
 
     const DepartmentCard = ({
         department,
@@ -78,91 +89,123 @@ export const DepartmentReportsPage: React.FC = () => {
         stats: DepartmentStats;
         icon: typeof Building2;
         color: string;
-    }) => (
-        <div className={`bg-white p-6 rounded-xl shadow-sm border ${color.replace('border-', 'border-opacity-50 border-')} transition-all hover:shadow-md`}>
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-lg ${color.replace('border', 'bg').replace('500', '50')}`}>
-                        <Icon className={`w-8 h-8 ${color.replace('border', 'text')}`} />
+    }) => {
+        return (
+            <div className={`bg-white p-6 rounded-xl shadow-sm border ${color.replace('border-', 'border-opacity-50 border-')} transition-all hover:shadow-md`}>
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-3 rounded-lg ${color.replace('border', 'bg').replace('500', '50')}`}>
+                            <Icon className={`w-8 h-8 ${color.replace('border', 'text')}`} />
+                        </div>
+                        <h3 className="text-2xl font-bold text-slate-800">{department}</h3>
                     </div>
-                    <h3 className="text-2xl font-bold text-slate-800">{department}</h3>
+                    <div className="text-right">
+                        <p className="text-sm text-slate-500">Closure Rate</p>
+                        <p className={`text-3xl font-bold ${stats.closureRate >= 80 ? 'text-green-600' :
+                            stats.closureRate >= 60 ? 'text-yellow-600' :
+                                stats.closureRate >= 40 ? 'text-orange-600' : 'text-red-600'
+                            }`}>
+                            {stats.closureRate.toFixed(1)}%
+                        </p>
+                    </div>
                 </div>
-                <div className="text-right">
-                    <p className="text-sm text-slate-500">Closure Rate</p>
-                    <p className={`text-3xl font-bold ${stats.closureRate >= 80 ? 'text-green-600' :
-                        stats.closureRate >= 60 ? 'text-yellow-600' :
-                            stats.closureRate >= 40 ? 'text-orange-600' : 'text-red-600'
-                        }`}>
-                        {stats.closureRate.toFixed(1)}%
-                    </p>
-                </div>
-            </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-slate-50 p-3 rounded-lg">
-                    <p className="text-xs text-slate-500 mb-1">Total</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
-                </div>
-                <div className="bg-green-50 p-3 rounded-lg">
-                    <p className="text-xs text-green-600 mb-1">Closed</p>
-                    <p className="text-2xl font-bold text-green-700">{stats.closed}</p>
-                </div>
-                <div className="bg-amber-50 p-3 rounded-lg">
-                    <p className="text-xs text-amber-600 mb-1">Open</p>
-                    <p className="text-2xl font-bold text-amber-700">{stats.open}</p>
-                </div>
-                <div className="bg-blue-50 p-3 rounded-lg">
-                    <p className="text-xs text-blue-600 mb-1">Officers</p>
-                    <p className="text-2xl font-bold text-blue-700">{stats.officers.size}</p>
-                </div>
-            </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                    <div className="bg-slate-50 p-3 rounded-lg">
+                        <p className="text-xs text-slate-500 mb-1">Total</p>
+                        <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+                    </div>
 
-            <div className="mt-4">
-                <div className="flex justify-between text-xs text-slate-600 mb-1">
-                    <span>Progress</span>
-                    <span>{stats.closed} / {stats.total}</span>
+                    {/* Dynamic Status Blocks */}
+                    {uniqueStatuses.map(status => {
+                        // Color mapping fallback
+                        let bgColor = 'bg-slate-50';
+                        let textColor = 'text-slate-700';
+                        const lowerStatus = status.toLowerCase();
+
+                        if (lowerStatus.includes('close')) { bgColor = 'bg-green-50'; textColor = 'text-green-700'; }
+                        else if (lowerStatus.includes('open')) { bgColor = 'bg-amber-50'; textColor = 'text-amber-700'; }
+                        else if (lowerStatus.includes('pending')) { bgColor = 'bg-blue-50'; textColor = 'text-blue-700'; }
+                        else if (lowerStatus.includes('reject')) { bgColor = 'bg-red-50'; textColor = 'text-red-700'; }
+                        else if (lowerStatus.includes('progress')) { bgColor = 'bg-indigo-50'; textColor = 'text-indigo-700'; }
+
+                        return (
+                            <div key={status} className={`${bgColor} p-3 rounded-lg`}>
+                                <p className={`text-xs ${textColor} mb-1`}>{status}</p>
+                                <p className={`text-2xl font-bold ${textColor}`}>
+                                    {stats.statusCounts[status] || 0}
+                                </p>
+                            </div>
+                        );
+                    })}
+
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                        <p className="text-xs text-blue-600 mb-1">Officers</p>
+                        <p className="text-2xl font-bold text-blue-700">{stats.officers.size}</p>
+                    </div>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-3">
-                    <div
-                        className={`h-3 rounded-full ${stats.closureRate >= 80 ? 'bg-green-500' :
-                            stats.closureRate >= 60 ? 'bg-yellow-500' :
-                                stats.closureRate >= 40 ? 'bg-orange-500' : 'bg-red-500'
-                            }`}
-                        style={{ width: `${stats.closureRate}%` }}
-                    />
+
+                <div className="mt-4">
+                    <div className="flex justify-between text-xs text-slate-600 mb-1">
+                        <span>Progress</span>
+                        <span>{stats.closed} / {stats.total}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-3">
+                        <div
+                            className={`h-3 rounded-full ${stats.closureRate >= 80 ? 'bg-green-500' :
+                                stats.closureRate >= 60 ? 'bg-yellow-500' :
+                                    stats.closureRate >= 40 ? 'bg-orange-500' : 'bg-red-500'
+                                }`}
+                            style={{ width: `${stats.closureRate}%` }}
+                        />
+                    </div>
                 </div>
             </div>
-        </div>
-    );
+        )
+    };
 
     // Filter officers by department
-    const getOfficersByDepartment = (department: 'Sanitation' | 'Civil') => {
+    const getOfficersByDepartment = (department: 'Sanitation' | 'Civil' | 'C&D') => {
         const deptData = filteredData.filter(complaint => {
             const type = complaint['Complainttype'] || '';
+            const subtype = complaint['complaintsubtype'] || '';
+
             const sanitationTypes = ['Door To Door', 'Road Sweeping', 'Drain Cleaning', 'Sanitation', 'Dead Animals'];
             const civilTypes = ['STREET LIGHT', 'Civil', 'Water Logging'];
+            const cndType = "Illegal Dumping of C&D waste";
 
             if (department === 'Sanitation') {
-                return sanitationTypes.some(t => type.includes(t));
+                return sanitationTypes.some(t => type.includes(t)) && !subtype.includes(cndType);
+            } else if (department === 'Civil') {
+                return civilTypes.some(t => type.includes(t)) && !subtype.includes(cndType);
             } else {
-                return civilTypes.some(t => type.includes(t));
+                return subtype.includes(cndType);
             }
         });
 
-        const officerStats: Record<string, { total: number; closed: number; open: number }> = {};
+        interface OfficerRowStats {
+            total: number;
+            closed: number;
+            statusCounts: Record<string, number>;
+        }
+
+        const officerStats: Record<string, OfficerRowStats> = {};
 
         deptData.forEach(complaint => {
             const officer = complaint.assignedOfficer;
             if (!officer) return;
 
             if (!officerStats[officer]) {
-                officerStats[officer] = { total: 0, closed: 0, open: 0 };
+                officerStats[officer] = { total: 0, closed: 0, statusCounts: {} };
+                uniqueStatuses.forEach(s => officerStats[officer].statusCounts[s] = 0);
             }
 
-            officerStats[officer].total++;
-            const status = complaint['Status']?.toLowerCase() || '';
-            if (status.includes('close')) officerStats[officer].closed++;
-            else officerStats[officer].open++;
+            const s = officerStats[officer];
+            s.total++;
+            const rawStatus = (complaint['Status'] || 'Unknown').trim();
+            s.statusCounts[rawStatus] = (s.statusCounts[rawStatus] || 0) + 1;
+
+            if (rawStatus.toLowerCase().includes('close')) s.closed++;
         });
 
         return Object.entries(officerStats)
@@ -176,40 +219,90 @@ export const DepartmentReportsPage: React.FC = () => {
 
     const sanitationOfficers = getOfficersByDepartment('Sanitation');
     const civilOfficers = getOfficersByDepartment('Civil');
+    const cndOfficers = getOfficersByDepartment('C&D');
 
     const handleExportExcel = () => {
         const dataToExport: any[] = [];
-
-        if (selectedDept === 'Both' || selectedDept === 'Sanitation') {
-            sanitationOfficers.forEach((o, index) => {
-                dataToExport.push({
-                    'Department': 'Sanitation',
+        const processExport = (deptName: string, officers: any[]) => {
+            officers.forEach((o, index) => {
+                const row: any = {
+                    'Department': deptName,
                     'Sr No': index + 1,
                     'Officer': o.officer,
                     'Total': o.total,
                     'Closed': o.closed,
-                    'Open': o.open,
-                    'Closure Rate': `${o.closureRate.toFixed(2)}%`
-                });
+                };
+                uniqueStatuses.forEach(s => row[s] = o.statusCounts[s]);
+                row['Closure Rate'] = `${o.closureRate.toFixed(2)}%`;
+                dataToExport.push(row);
             });
-        }
+        };
 
-        if (selectedDept === 'Both' || selectedDept === 'Civil') {
-            civilOfficers.forEach((o, index) => {
-                dataToExport.push({
-                    'Department': 'Civil',
-                    'Sr No': index + 1,
-                    'Officer': o.officer,
-                    'Total': o.total,
-                    'Closed': o.closed,
-                    'Open': o.open,
-                    'Closure Rate': `${o.closureRate.toFixed(2)}%`
-                });
-            });
-        }
+        if (selectedDept === 'Both' || selectedDept === 'Sanitation') processExport('Sanitation', sanitationOfficers);
+        if (selectedDept === 'Both' || selectedDept === 'Civil') processExport('Civil', civilOfficers);
+        if (selectedDept === 'Both' || selectedDept === 'C&D') processExport('C&D', cndOfficers);
 
         exportToExcel(dataToExport, `Department_Report_${selectedDept}_${new Date().toISOString().split('T')[0]}`);
     };
+
+    const DynamicTable = ({ title, officers, colorClass }: { title: string, officers: any[], colorClass: string }) => (
+        <div className="overflow-hidden border border-slate-300">
+            <div className={`px-6 py-4 border-b border-slate-300 ${colorClass.replace('text-', 'bg-').replace('700', '50')}`}>
+                <h3 className="font-bold text-slate-800 text-lg uppercase">{title}</h3>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse border border-slate-300 relative">
+                    <thead className="bg-slate-100">
+                        <tr>
+                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-16 bg-slate-100">Sr. No</th>
+                            <th className="border border-slate-300 px-2 py-2 text-left font-bold text-slate-700 bg-slate-100">Officer</th>
+                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-24 bg-slate-100">Total</th>
+
+                            {/* Dynamic Status Columns */}
+                            {uniqueStatuses.map(status => (
+                                <th key={status} className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 min-w-[80px] bg-slate-100">
+                                    {status}
+                                </th>
+                            ))}
+
+                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-32 bg-slate-100">Closure Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {officers.map((officer, idx) => (
+                            <tr key={officer.officer} className={`hover:${colorClass.replace('text-', 'bg-').replace('700', '50')} even:bg-slate-50/50 transition-colors`}>
+                                <td className="border border-slate-300 px-2 py-1 text-center text-slate-600">{idx + 1}</td>
+                                <td className="border border-slate-300 px-2 py-1 font-semibold text-slate-800">{officer.officer}</td>
+                                <td className="border border-slate-300 px-2 py-1 text-center font-bold text-slate-900 bg-slate-50">{officer.total}</td>
+
+                                {uniqueStatuses.map(status => {
+                                    const count = officer.statusCounts[status] || 0;
+                                    let textColor = 'text-slate-600';
+                                    let bgColor = '';
+                                    if (status.toLowerCase().includes('close')) { textColor = 'text-green-700'; bgColor = 'bg-green-50'; }
+                                    else if (status.toLowerCase().includes('open')) { textColor = 'text-amber-700'; bgColor = 'bg-amber-50'; }
+                                    else if (status.toLowerCase().includes('pending')) { textColor = 'text-blue-700'; bgColor = 'bg-blue-50'; }
+
+                                    return (
+                                        <td key={status} className={`border border-slate-300 px-2 py-1 text-center font-bold ${textColor} ${bgColor}`}>
+                                            {count || '-'}
+                                        </td>
+                                    );
+                                })}
+
+                                <td className={`border border-slate-300 px-2 py-1 text-center font-bold ${officer.closureRate >= 80 ? 'text-green-700 bg-green-100' :
+                                    officer.closureRate >= 60 ? 'text-yellow-700 bg-yellow-100' :
+                                        officer.closureRate >= 40 ? 'text-orange-700 bg-orange-100' : 'text-red-700 bg-red-100'
+                                    }`}>
+                                    {officer.total === 0 ? '-' : `${officer.closureRate.toFixed(1)}%`}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
 
     return (
         <div className="space-y-6 pb-12">
@@ -229,7 +322,7 @@ export const DepartmentReportsPage: React.FC = () => {
                             : 'text-slate-600 hover:text-slate-900'
                             }`}
                     >
-                        Both
+                        All
                     </button>
                     <button
                         onClick={() => setSelectedDept('Sanitation')}
@@ -238,7 +331,7 @@ export const DepartmentReportsPage: React.FC = () => {
                             : 'text-slate-600 hover:text-slate-900'
                             }`}
                     >
-                        Sanitation Only
+                        Sanitation
                     </button>
                     <button
                         onClick={() => setSelectedDept('Civil')}
@@ -247,7 +340,16 @@ export const DepartmentReportsPage: React.FC = () => {
                             : 'text-slate-600 hover:text-slate-900'
                             }`}
                     >
-                        Civil Only
+                        Civil
+                    </button>
+                    <button
+                        onClick={() => setSelectedDept('C&D')}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${selectedDept === 'C&D'
+                            ? 'bg-white text-blue-700 shadow-sm'
+                            : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                    >
+                        C&D
                     </button>
                 </div>
                 <div className="flex gap-2">
@@ -262,7 +364,7 @@ export const DepartmentReportsPage: React.FC = () => {
             {/* Export Wrapper */}
             <div id="dept-report-content" className="bg-white p-6 sm:p-8 min-h-screen">
                 <ReportHeader
-                    title={`${selectedDept === 'Both' ? 'Civil & Sanitation' : selectedDept} Department Performance`}
+                    title={`${selectedDept === 'Both' ? 'All Departments' : selectedDept + ' Department'} Performance`}
                     dateFrom={dateFrom}
                     dateTo={dateTo}
                 />
@@ -287,83 +389,26 @@ export const DepartmentReportsPage: React.FC = () => {
                         />
                     )}
 
+                    {(selectedDept === 'Both' || selectedDept === 'C&D') && (
+                        <DepartmentCard
+                            department="C&D Waste Department"
+                            stats={cndStats}
+                            icon={Trash2}
+                            color="border-amber-500"
+                        />
+                    )}
+
                     {/* Officer Tables */}
                     {(selectedDept === 'Both' || selectedDept === 'Sanitation') && sanitationOfficers.length > 0 && (
-                        <div className="overflow-hidden border border-slate-300">
-                            <div className="px-6 py-4 border-b border-slate-300 bg-blue-50">
-                                <h3 className="font-bold text-slate-800 text-lg uppercase">Sanitation Officers</h3>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm border-collapse border border-slate-300 relative">
-                                    <thead className="bg-slate-100">
-                                        <tr>
-                                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-16 bg-slate-100">Sr. No</th>
-                                            <th className="border border-slate-300 px-2 py-2 text-left font-bold text-slate-700 bg-slate-100">Officer</th>
-                                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-24 bg-slate-100">Total</th>
-                                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-24 bg-slate-100">Closed</th>
-                                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-24 bg-slate-100">Open</th>
-                                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-32 bg-slate-100">Closure Rate</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {sanitationOfficers.map((officer, idx) => (
-                                            <tr key={officer.officer} className="hover:bg-blue-50 even:bg-slate-50/50 transition-colors">
-                                                <td className="border border-slate-300 px-2 py-1 text-center text-slate-600">{idx + 1}</td>
-                                                <td className="border border-slate-300 px-2 py-1 font-semibold text-slate-800">{officer.officer}</td>
-                                                <td className="border border-slate-300 px-2 py-1 text-center font-bold text-slate-900 bg-slate-50">{officer.total}</td>
-                                                <td className="border border-slate-300 px-2 py-1 text-center font-bold text-green-700 bg-green-50">{officer.closed}</td>
-                                                <td className="border border-slate-300 px-2 py-1 text-center font-bold text-amber-700 bg-amber-50">{officer.open}</td>
-                                                <td className={`border border-slate-300 px-2 py-1 text-center font-bold ${officer.closureRate >= 80 ? 'text-green-700 bg-green-100' :
-                                                    officer.closureRate >= 60 ? 'text-yellow-700 bg-yellow-100' :
-                                                        officer.closureRate >= 40 ? 'text-orange-700 bg-orange-100' : 'text-red-700 bg-red-100'
-                                                    }`}>
-                                                    {officer.closureRate.toFixed(1)}%
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <DynamicTable title="Sanitation Officers" officers={sanitationOfficers} colorClass="text-blue-700" />
                     )}
 
                     {(selectedDept === 'Both' || selectedDept === 'Civil') && civilOfficers.length > 0 && (
-                        <div className="overflow-hidden border border-slate-300">
-                            <div className="px-6 py-4 border-b border-slate-300 bg-green-50">
-                                <h3 className="font-bold text-slate-800 text-lg uppercase">Civil Officers</h3>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm border-collapse border border-slate-300 relative">
-                                    <thead className="bg-slate-100">
-                                        <tr>
-                                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-16 bg-slate-100">Sr. No</th>
-                                            <th className="border border-slate-300 px-2 py-2 text-left font-bold text-slate-700 bg-slate-100">Officer</th>
-                                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-24 bg-slate-100">Total</th>
-                                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-24 bg-slate-100">Closed</th>
-                                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-24 bg-slate-100">Open</th>
-                                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-32 bg-slate-100">Closure Rate</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {civilOfficers.map((officer, idx) => (
-                                            <tr key={officer.officer} className="hover:bg-green-50 even:bg-slate-50/50 transition-colors">
-                                                <td className="border border-slate-300 px-2 py-1 text-center text-slate-600">{idx + 1}</td>
-                                                <td className="border border-slate-300 px-2 py-1 font-semibold text-slate-800">{officer.officer}</td>
-                                                <td className="border border-slate-300 px-2 py-1 text-center font-bold text-slate-900 bg-slate-50">{officer.total}</td>
-                                                <td className="border border-slate-300 px-2 py-1 text-center font-bold text-green-700 bg-green-50">{officer.closed}</td>
-                                                <td className="border border-slate-300 px-2 py-1 text-center font-bold text-amber-700 bg-amber-50">{officer.open}</td>
-                                                <td className={`border border-slate-300 px-2 py-1 text-center font-bold ${officer.closureRate >= 80 ? 'text-green-700 bg-green-100' :
-                                                    officer.closureRate >= 60 ? 'text-yellow-700 bg-yellow-100' :
-                                                        officer.closureRate >= 40 ? 'text-orange-700 bg-orange-100' : 'text-red-700 bg-red-100'
-                                                    }`}>
-                                                    {officer.closureRate.toFixed(1)}%
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <DynamicTable title="Civil Officers" officers={civilOfficers} colorClass="text-green-700" />
+                    )}
+
+                    {(selectedDept === 'Both' || selectedDept === 'C&D') && cndOfficers.length > 0 && (
+                        <DynamicTable title="C&D Department Officers" officers={cndOfficers} colorClass="text-amber-700" />
                     )}
                 </div>
             </div>

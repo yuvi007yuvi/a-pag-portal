@@ -11,6 +11,7 @@ export const SFIReportsPage: React.FC = () => {
     const { filteredData, stats, dateFrom, dateTo } = useData();
     // HARDCODED: SFI Page is for Sanitation ONLY
     const department: 'Sanitation' | 'Civil' = 'Sanitation';
+    const cndType = "Illegal Dumping of C&D waste";
 
     if (!stats) {
         return (
@@ -50,45 +51,64 @@ export const SFIReportsPage: React.FC = () => {
     // Let's modify SFIReportTable in the NEXT step. For now, let's implement the Page logic which controls the view.
 
     const handleExportExcel = () => {
-        const officerStats: Record<string, any> = {};
+        // Filter out C&D waste first, to match the table
+        const relevantData = filteredData.filter(c => !(c['complaintsubtype'] || '').includes(cndType));
+
+        // Identify unique statuses
+        const uniqueStatuses = Array.from(new Set(relevantData.map(d => (d['Status'] || 'Unknown').trim()))).sort();
+
+        interface DynamicOfficerExportStats {
+            officer: string;
+            total: number;
+            closed: number;
+            statusCounts: Record<string, number>;
+            closureRate: number;
+        }
+
+        const officerStats: Record<string, DynamicOfficerExportStats> = {};
 
         // Initialize only relevant officers
         uniqueRelevantOfficers.forEach(officer => {
-            officerStats[officer] = { officer, total: 0, closed: 0, open: 0, pending: 0, closureRate: 0 };
+            officerStats[officer] = {
+                officer,
+                total: 0,
+                closed: 0,
+                statusCounts: {},
+                closureRate: 0
+            };
+            uniqueStatuses.forEach(s => officerStats[officer].statusCounts[s] = 0);
         });
 
         // Populate
-        filteredData.forEach(complaint => {
+        relevantData.forEach(complaint => {
             const officer = complaint.assignedOfficer;
             if (!officer || !uniqueRelevantOfficers.has(officer)) return;
 
             if (!officerStats[officer]) {
-                // Should not happen if initialized, but strictly:
-                // officerStats[officer] = { officer, total: 0, closed: 0, open: 0, pending: 0, closureRate: 0 };
+                // If officer wasn't in list (shouldn't happen if list is comprehensive), ignore or add?
                 return;
             }
 
             const s = officerStats[officer];
             s.total++;
-            const status = complaint['Status']?.toLowerCase() || '';
-            if (status.includes('close')) s.closed++;
-            else if (status.includes('open')) s.open++;
-            else if (status.includes('pending')) s.pending++;
-            else s.open++;
+            const rawStatus = (complaint['Status'] || 'Unknown').trim();
+            s.statusCounts[rawStatus] = (s.statusCounts[rawStatus] || 0) + 1;
+
+            if (rawStatus.toLowerCase().includes('close')) s.closed++;
         });
 
         // Calculate Rate & Format
         const dataToExport = Object.values(officerStats).map((s, index) => {
             const rate = s.total > 0 ? (s.closed / s.total) * 100 : 0;
-            return {
+            const row: any = {
                 'Sr No': index + 1,
                 'Officer Name': s.officer,
                 'Total Complaints': s.total,
                 'Closed': s.closed,
-                'Open': s.open,
-                'Pending': s.pending,
-                'Closure Rate': `${rate.toFixed(1)}%`
             };
+            uniqueStatuses.forEach(st => row[st] = s.statusCounts[st]);
+            row['Closure Rate'] = `${rate.toFixed(1)}%`;
+            return row;
         }).sort((a, b) => b['Total Complaints'] - a['Total Complaints']);
 
         exportToExcel(dataToExport, `${department}_SFI_Performance_Report`);
@@ -101,7 +121,7 @@ export const SFIReportsPage: React.FC = () => {
                 <div className="flex items-center gap-4">
                     <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                         <FileText className="w-6 h-6 text-slate-700" />
-                        SFI Performance Report (Sanitation)
+                        OFFICERS WISE Performance Report
                     </h2>
                 </div>
 
@@ -117,13 +137,16 @@ export const SFIReportsPage: React.FC = () => {
             {/* Export Wrapper */}
             <div id="sfi-report-content" className="bg-white p-6 sm:p-8 min-h-screen">
                 <ReportHeader
-                    title="SFI Performance Report"
+                    title="OFFICERS WISE Performance Report"
                     dateFrom={dateFrom}
                     dateTo={dateTo}
                 />
 
-                {/* Pass filtered Department to Table */}
-                <SFIReportTable data={filteredData} department={department} />
+                {/* Pass filtered Department to Table, explicitly EXCLUDING C&D if any slipped through */}
+                <SFIReportTable
+                    data={filteredData.filter(c => !(c['complaintsubtype'] || '').includes(cndType))}
+                    department={department}
+                />
 
                 <div className="mt-8 pt-8 border-t border-slate-200 text-center text-slate-400 text-xs">
                     <p>© 2025 A-PAG Portal • {department} Performance Metrics</p>

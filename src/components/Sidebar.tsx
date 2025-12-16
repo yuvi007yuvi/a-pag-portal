@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, UserCheck, ClipboardList, Upload, Building, Map, FileText, TrendingUp, Activity } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, ClipboardList, Upload, Building, Map, FileText, TrendingUp, Activity, Trash2 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
     const navItems = [
@@ -14,6 +14,7 @@ export const Sidebar: React.FC = () => {
         { to: '/complaints', icon: ClipboardList, label: 'All Complaints' },
         { to: '/complainant-trends', icon: TrendingUp, label: 'Complainant Trends' },
         { to: '/subtype-trends', icon: Activity, label: 'Subtype Trends' },
+        { to: '/cnd-reports', icon: Trash2, label: 'C&D Reports' },
     ];
 
     return (

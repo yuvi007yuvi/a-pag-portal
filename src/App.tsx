@@ -11,6 +11,7 @@ import { ComplaintsPage } from './pages/ComplaintsPage';
 import { OfficerReportPage } from './pages/OfficerReportPage';
 import { ComplainantTrendsPage } from './pages/ComplainantTrendsPage';
 import { SubtypeTrendsPage } from './pages/SubtypeTrendsPage';
+import { CnDReportsPage } from './pages/CnDReportsPage';
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
               <Route path="/complaints" element={<ComplaintsPage />} />
               <Route path="/complainant-trends" element={<ComplainantTrendsPage />} />
               <Route path="/subtype-trends" element={<SubtypeTrendsPage />} />
+              <Route path="/cnd-reports" element={<CnDReportsPage />} />
             </Routes>
           </main>
         </div>

@@ -105,25 +105,35 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatsCard
                     title="Total Complaints"
                     value={stats.total}
                     icon={FileText}
-                    color="text-blue-600 bg-blue-50"
+                    color="text-slate-600 bg-slate-50"
                 />
-                <StatsCard
-                    title="Open Complaints"
-                    value={stats.open}
-                    icon={AlertCircle}
-                    color="text-amber-600 bg-amber-50"
-                />
-                <StatsCard
-                    title="Closed Complaints"
-                    value={stats.closed}
-                    icon={CheckCircle}
-                    color="text-green-600 bg-green-50"
-                />
+
+                {Object.entries(stats.statusDistribution).map(([status, count]) => {
+                    let color = 'text-slate-600 bg-slate-50';
+                    let icon = AlertCircle;
+                    const lowerStatus = status.toLowerCase();
+
+                    if (lowerStatus.includes('open')) { color = 'text-amber-600 bg-amber-50'; icon = AlertCircle; }
+                    else if (lowerStatus.includes('close')) { color = 'text-green-600 bg-green-50'; icon = CheckCircle; }
+                    else if (lowerStatus.includes('pending')) { color = 'text-blue-600 bg-blue-50'; icon = AlertCircle; }
+                    else if (lowerStatus.includes('reject')) { color = 'text-red-600 bg-red-50'; icon = AlertCircle; }
+                    else if (lowerStatus.includes('progress')) { color = 'text-indigo-600 bg-indigo-50'; icon = AlertCircle; }
+
+                    return (
+                        <StatsCard
+                            key={status}
+                            title={`${status} Complaints`}
+                            value={count}
+                            icon={icon}
+                            color={color}
+                        />
+                    );
+                })}
             </div>
 
             {/* Charts Row */}

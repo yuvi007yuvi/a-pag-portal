@@ -13,8 +13,9 @@ interface OfficerStats {
     wards: Set<string>;
     total: number;
     closed: number;
-    open: number;
+    statusCounts: Record<string, number>;
     closureRate: number;
+    [key: string]: any;
 }
 
 export const OfficerReportPage: React.FC = () => {
@@ -29,6 +30,12 @@ export const OfficerReportPage: React.FC = () => {
             </div>
         );
     }
+
+    // Identify unique statuses
+    const uniqueStatuses = Array.from(new Set(filteredData.map(d => {
+        const s = d['Status'] || 'Unknown';
+        return s.trim();
+    }))).sort();
 
     // Calculate officer-wise statistics
     const calculateOfficerStats = (department: 'Civil' | 'Sanitation' | 'Both'): OfficerStats[] => {
@@ -47,9 +54,10 @@ export const OfficerReportPage: React.FC = () => {
                     wards: new Set([mapping.ward]),
                     total: 0,
                     closed: 0,
-                    open: 0,
+                    statusCounts: {},
                     closureRate: 0
                 };
+                uniqueStatuses.forEach(s => officerStatsMap[mapping.officer].statusCounts[s] = 0);
             } else {
                 officerStatsMap[mapping.officer].zones.add(mapping.zone);
                 officerStatsMap[mapping.officer].wards.add(mapping.ward);
@@ -58,18 +66,22 @@ export const OfficerReportPage: React.FC = () => {
 
         // Add complaint data
         filteredData.forEach(complaint => {
+            const type = complaint['complaintsubtype'] || '';
+            // EXCLUDE C&D WASTE (Moved to dedicated page)
+            if (type.includes("Illegal Dumping of C&D waste")) return;
+
             const officer = complaint.assignedOfficer;
             if (!officer) return;
 
             // Only process if officer exists in our filtered map
             if (officerStatsMap[officer]) {
-                officerStatsMap[officer].total++;
-                const status = complaint['Status']?.toLowerCase() || '';
-                if (status.includes('close')) {
-                    officerStatsMap[officer].closed++;
-                } else {
-                    officerStatsMap[officer].open++;
-                }
+                const s = officerStatsMap[officer];
+                s.total++;
+
+                const rawStatus = (complaint['Status'] || 'Unknown').trim();
+                s.statusCounts[rawStatus] = (s.statusCounts[rawStatus] || 0) + 1;
+
+                if (rawStatus.toLowerCase().includes('close')) s.closed++;
             }
         });
 
@@ -96,17 +108,20 @@ export const OfficerReportPage: React.FC = () => {
     };
 
     const handleExportExcel = () => {
-        const excelData = officerStats.map((o, index) => ({
-            'Sr No': index + 1,
-            'Officer Name': o.officer,
-            'Supervisor': o.supervisor,
-            'Zones': Array.from(o.zones).join(', '),
-            'Wards': Array.from(o.wards).join(', '),
-            'Total Complaints': o.total,
-            'Closed': o.closed,
-            'Open': o.open,
-            'Closure Rate': `${o.closureRate.toFixed(2)}%`
-        }));
+        const excelData = officerStats.map((o, index) => {
+            const row: any = {
+                'Sr No': index + 1,
+                'Officer Name': o.officer,
+                'Supervisor': o.supervisor,
+                'Zones': Array.from(o.zones).join(', '),
+                'Wards': Array.from(o.wards).join(', '),
+                'Total Complaints': o.total,
+                'Closed': o.closed,
+            };
+            uniqueStatuses.forEach(s => row[s] = o.statusCounts[s]);
+            row['Closure Rate'] = `${o.closureRate.toFixed(2)}%`;
+            return row;
+        });
         exportToExcel(excelData, `Officer_Report_Civil_${new Date().toISOString().split('T')[0]}`);
     };
 
@@ -186,8 +201,14 @@ export const OfficerReportPage: React.FC = () => {
                                     <th className="border border-slate-300 px-2 py-2 text-left font-bold text-slate-800 bg-slate-100">Zones</th>
                                     <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-800 w-16 bg-slate-100">Wards</th>
                                     <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-800 w-20 bg-slate-100">Total</th>
-                                    <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-800 w-20 bg-slate-100">Closed</th>
-                                    <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-800 w-20 bg-slate-100">Open</th>
+
+                                    {/* Dynamic Status Columns */}
+                                    {uniqueStatuses.map(status => (
+                                        <th key={status} className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-800 w-20 bg-slate-100">
+                                            {status}
+                                        </th>
+                                    ))}
+
                                     <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-800 w-24 bg-slate-100">Rate</th>
                                 </tr>
                             </thead>
@@ -197,7 +218,7 @@ export const OfficerReportPage: React.FC = () => {
                                         key={officer.officer}
                                         className="hover:bg-blue-50 even:bg-slate-50/30 transition-colors"
                                     >
-                                        <td className="border border-slate-300 px-2 py-1 text-center text-slate-700 font-medium">
+                                        <td className="border border-slate-300 px-2 py-1 text-center text-slate-700 font-medium pt-3 pb-3">
                                             {index + 1}
                                         </td>
                                         <td className="border border-slate-300 px-2 py-1 font-semibold text-slate-900">
@@ -215,17 +236,28 @@ export const OfficerReportPage: React.FC = () => {
                                         <td className="border border-slate-300 px-2 py-1 text-center font-bold text-slate-900 bg-slate-50">
                                             {officer.total}
                                         </td>
-                                        <td className="border border-slate-300 px-2 py-1 text-center font-bold text-green-700 bg-green-50">
-                                            {officer.closed}
-                                        </td>
-                                        <td className="border border-slate-300 px-2 py-1 text-center font-bold text-amber-700 bg-amber-50">
-                                            {officer.open}
-                                        </td>
+
+                                        {/* Dynamic Status Counts */}
+                                        {uniqueStatuses.map(status => {
+                                            const count = officer.statusCounts[status] || 0;
+                                            let colorClass = 'text-slate-700';
+                                            let bgClass = '';
+                                            if (status.toLowerCase().includes('close')) { colorClass = 'text-green-700'; bgClass = 'bg-green-50'; }
+                                            else if (status.toLowerCase().includes('open')) { colorClass = 'text-amber-700'; bgClass = 'bg-amber-50'; }
+                                            else if (status.toLowerCase().includes('pending')) { colorClass = 'text-blue-700'; bgClass = 'bg-blue-50'; }
+
+                                            return (
+                                                <td key={status} className={`border border-slate-300 px-2 py-1 text-center font-bold ${colorClass} ${bgClass}`}>
+                                                    {count || '-'}
+                                                </td>
+                                            );
+                                        })}
+
                                         <td className={`border border-slate-300 px-2 py-1 text-center font-bold ${officer.closureRate >= 80 ? 'text-green-700 bg-green-100' :
                                             officer.closureRate >= 60 ? 'text-yellow-700 bg-yellow-100' :
                                                 officer.closureRate >= 40 ? 'text-orange-700 bg-orange-100' : 'text-red-700 bg-red-100'
                                             }`}>
-                                            {officer.closureRate.toFixed(1)}%
+                                            {officer.total === 0 ? '-' : `${officer.closureRate.toFixed(1)}%`}
                                         </td>
                                     </tr>
                                 ))}
@@ -238,12 +270,21 @@ export const OfficerReportPage: React.FC = () => {
                                     <td className="border border-slate-300 px-2 py-2 text-center text-slate-900 bg-white text-lg">
                                         {totalComplaints}
                                     </td>
-                                    <td className="border border-slate-300 px-2 py-2 text-center text-green-700 bg-green-50 text-lg">
-                                        {totalClosed}
-                                    </td>
-                                    <td className="border border-slate-300 px-2 py-2 text-center text-amber-700 bg-amber-50 text-lg">
-                                        {totalOpen}
-                                    </td>
+
+                                    {/* Dynamic Status Footer Totals */}
+                                    {uniqueStatuses.map(status => {
+                                        const count = officerStats.reduce((sum, o) => sum + (o.statusCounts[status] || 0), 0);
+                                        let colorClass = 'text-slate-900';
+                                        if (status.toLowerCase().includes('close')) colorClass = 'text-green-700 bg-green-50';
+                                        else if (status.toLowerCase().includes('open')) colorClass = 'text-amber-700 bg-amber-50';
+
+                                        return (
+                                            <td key={status} className={`border border-slate-300 px-2 py-2 text-center text-lg ${colorClass}`}>
+                                                {count}
+                                            </td>
+                                        )
+                                    })}
+
                                     <td className="border border-slate-300 px-2 py-2 text-center text-purple-700 bg-purple-50 text-lg">
                                         {overallClosureRate.toFixed(1)}%
                                     </td>
