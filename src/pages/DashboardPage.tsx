@@ -5,6 +5,7 @@ import { ZoneChart } from '../components/ZoneChart';
 import { StatusChart } from '../components/StatusChart';
 import { OfficerChart } from '../components/OfficerChart';
 import { SupervisorChart } from '../components/SupervisorChart';
+import { PendingAnalysisChart } from '../components/PendingAnalysisChart';
 import { CheckCircle, AlertCircle, FileText, Calendar } from 'lucide-react';
 import { calculateStats } from '../utils/dataProcessor';
 
@@ -140,6 +141,12 @@ export const DashboardPage: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <ZoneChart data={stats.zones} />
                 <StatusChart data={stats.statusDistribution} />
+            </div>
+
+            {/* Pending Analysis */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <PendingAnalysisChart stats={stats} />
+                <div className="hidden lg:block"></div> {/* Spacer if we want it to be half width, or remove to make full width if class changed */}
             </div>
 
             {/* Officer & Supervisor Charts */}

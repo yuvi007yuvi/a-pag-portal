@@ -26,21 +26,17 @@ export interface Stats {
     statusDistribution: Record<string, number>;
     officers: Record<string, number>;
     supervisors: Record<string, number>;
+    pendingByZone: Record<string, number>;
+    pendingByAge: {
+        lessThan24h: number;
+        oneToThreeDays: number;
+        threeToSevenDays: number;
+        moreThanSevenDays: number;
+    };
 }
 
-const normalizeSupervisorName = (name: string): string => {
-    if (!name) return '';
-    // Extract Base Name and Type (SS/NS) from "Name SS12"
-    // This merges "Jitendra SS8" & "Jitendra SS9" -> "Jitendra SS"
-    // But keeps "Sanjay SS" and "Sanjay NS" distinct
-    const match = name.match(/^(.*?)\s+(SS|NS)\d+/i);
-    if (match) {
-        return `${match[1].trim()} ${match[2].toUpperCase()}`;
-    }
-    // Fallback: remove simple suffixes matching the pattern if simpler regex needed, 
-    // or just return trimmed name if it doesn't match standard format.
-    // For safety, if it doesn't match the strict SS/NS pattern, check loose pattern
-    return name.replace(/\s+(?:SS|NS)\d+.*$/i, '').trim();
+export const normalizeSupervisorName = (name: string): string => {
+    return name ? name.trim() : '';
 };
 
 export const parseCSV = (file: File): Promise<ComplaintRecord[]> => {
@@ -76,6 +72,10 @@ export const parseCSV = (file: File): Promise<ComplaintRecord[]> => {
                         name.trim().toLowerCase() === allowed.toLowerCase()
                     );
 
+                    // IGNORE: invalid status types (likely encoding issues)
+                    const status = record['Status'] || '';
+                    if (status.includes('?????? ?????')) return false;
+
                     // Both conditions must be true
                     return isAllowedType && isAllowedComplainant;
                 });
@@ -110,7 +110,16 @@ export const calculateStats = (data: ComplaintRecord[]): Stats => {
         statusDistribution: {},
         officers: {},
         supervisors: {},
+        pendingByZone: {},
+        pendingByAge: {
+            lessThan24h: 0,
+            oneToThreeDays: 0,
+            threeToSevenDays: 0,
+            moreThanSevenDays: 0,
+        },
     };
+
+    const now = new Date();
 
     data.forEach((row) => {
         // Basic validation
@@ -131,6 +140,28 @@ export const calculateStats = (data: ComplaintRecord[]): Stats => {
 
         if (status === 'Open' || status === 'Re-open') {
             stats.open++;
+
+            // Pending by Zone
+            stats.pendingByZone[zone] = (stats.pendingByZone[zone] || 0) + 1;
+
+            // Pending by Age
+            if (row['Complaint Registered Date']) {
+                const complaintDate = new Date(row['Complaint Registered Date']);
+                if (!isNaN(complaintDate.getTime())) {
+                    const diffTime = Math.abs(now.getTime() - complaintDate.getTime());
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays <= 1) {
+                        stats.pendingByAge.lessThan24h++;
+                    } else if (diffDays <= 3) {
+                        stats.pendingByAge.oneToThreeDays++;
+                    } else if (diffDays <= 7) {
+                        stats.pendingByAge.threeToSevenDays++;
+                    } else {
+                        stats.pendingByAge.moreThanSevenDays++;
+                    }
+                }
+            }
         } else if (status === 'Close') {
             stats.closed++;
         }
