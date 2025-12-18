@@ -14,7 +14,7 @@ export const Sidebar: React.FC = () => {
         { to: '/complaints', icon: ClipboardList, label: 'All Complaints' },
         { to: '/complainant-trends', icon: TrendingUp, label: 'Complainant Trends' },
         { to: '/subtype-trends', icon: Activity, label: 'Subtype Trends' },
-        { to: '/cnd-reports', icon: Trash2, label: 'C&D Reports' },
+        { to: '/cnd-reports', icon: Trash2, label: 'Nature Green C&D' },
     ];
 
     return (

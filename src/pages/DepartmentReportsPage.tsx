@@ -247,52 +247,64 @@ export const DepartmentReportsPage: React.FC = () => {
 
     const DynamicTable = ({ title, officers, colorClass }: { title: string, officers: any[], colorClass: string }) => (
         <div className="overflow-hidden border border-slate-300">
-            <div className={`px-6 py-4 border-b border-slate-300 ${colorClass.replace('text-', 'bg-').replace('700', '50')}`}>
-                <h3 className="font-bold text-slate-800 text-lg uppercase">{title}</h3>
+            <div className={`px-6 py-3 border-b border-slate-400 bg-white`}>
+                <h3 className="font-bold text-slate-800 text-base">{title}</h3>
             </div>
             <div className="overflow-x-auto">
-                <table className="w-full text-sm border-collapse border border-slate-300 relative">
-                    <thead className="bg-slate-100">
+                <table className="excel-table">
+                    <thead>
                         <tr>
-                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-16 bg-slate-100">Sr. No</th>
-                            <th className="border border-slate-300 px-2 py-2 text-left font-bold text-slate-700 bg-slate-100">Officer</th>
-                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-24 bg-slate-100">Total</th>
+                            <th className="text-center w-16">Sr. No</th>
+                            <th className="text-left">Officer</th>
+                            <th className="text-center w-24">Total</th>
 
-                            {/* Dynamic Status Columns */}
-                            {uniqueStatuses.map(status => (
-                                <th key={status} className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 min-w-[80px] bg-slate-100">
-                                    {status}
-                                </th>
-                            ))}
+                            {/* Dynamic Status Columns with Colors */}
+                            {uniqueStatuses.map(status => {
+                                let bgColor = 'bg-slate-200';
+                                const lowerStatus = status.toLowerCase();
+                                if (lowerStatus.includes('close')) bgColor = 'bg-green-200';
+                                else if (lowerStatus.includes('open')) bgColor = 'bg-amber-200';
+                                else if (lowerStatus.includes('pending')) bgColor = 'bg-blue-200';
+                                else if (lowerStatus.includes('reject') || lowerStatus.includes('re-open')) bgColor = 'bg-red-200';
 
-                            <th className="border border-slate-300 px-2 py-2 text-center font-bold text-slate-700 w-32 bg-slate-100">Closure Rate</th>
+                                return (
+                                    <th key={status} className={`text-center min-w-[80px] ${bgColor}`}>
+                                        {status}
+                                    </th>
+                                );
+                            })}
+
+                            <th className="text-center w-32 bg-purple-200">Closure Rate</th>
                         </tr>
                     </thead>
                     <tbody>
                         {officers.map((officer, idx) => (
-                            <tr key={officer.officer} className={`hover:${colorClass.replace('text-', 'bg-').replace('700', '50')} even:bg-slate-50/50 transition-colors`}>
-                                <td className="border border-slate-300 px-2 py-1 text-center text-slate-600">{idx + 1}</td>
-                                <td className="border border-slate-300 px-2 py-1 font-semibold text-slate-800">{officer.officer}</td>
-                                <td className="border border-slate-300 px-2 py-1 text-center font-bold text-slate-900 bg-slate-50">{officer.total}</td>
+                            <tr key={officer.officer} className="hover:bg-slate-100">
+                                <td className="text-center text-slate-600">{idx + 1}</td>
+                                <td className="font-semibold text-slate-800">{officer.officer}</td>
+                                <td className="text-center font-bold text-slate-900">{officer.total}</td>
 
                                 {uniqueStatuses.map(status => {
                                     const count = officer.statusCounts[status] || 0;
-                                    let textColor = 'text-slate-600';
-                                    let bgColor = '';
-                                    if (status.toLowerCase().includes('close')) { textColor = 'text-green-700'; bgColor = 'bg-green-50'; }
-                                    else if (status.toLowerCase().includes('open')) { textColor = 'text-amber-700'; bgColor = 'bg-amber-50'; }
-                                    else if (status.toLowerCase().includes('pending')) { textColor = 'text-blue-700'; bgColor = 'bg-blue-50'; }
+                                    const lowerStatus = status.toLowerCase();
+                                    let cellClass = '';
+
+                                    if (lowerStatus.includes('close')) cellClass = 'status-closed';
+                                    else if (lowerStatus.includes('open') && !lowerStatus.includes('re-open')) cellClass = 'status-open';
+                                    else if (lowerStatus.includes('pending')) cellClass = 'status-pending';
+                                    else if (lowerStatus.includes('reject') || lowerStatus.includes('re-open')) cellClass = 'status-reopen';
+                                    else cellClass = 'status-scope';
 
                                     return (
-                                        <td key={status} className={`border border-slate-300 px-2 py-1 text-center font-bold ${textColor} ${bgColor}`}>
+                                        <td key={status} className={`text-center ${cellClass}`}>
                                             {count || '-'}
                                         </td>
                                     );
                                 })}
 
-                                <td className={`border border-slate-300 px-2 py-1 text-center font-bold ${officer.closureRate >= 80 ? 'text-green-700 bg-green-100' :
-                                    officer.closureRate >= 60 ? 'text-yellow-700 bg-yellow-100' :
-                                        officer.closureRate >= 40 ? 'text-orange-700 bg-orange-100' : 'text-red-700 bg-red-100'
+                                <td className={`text-center font-bold ${officer.closureRate >= 80 ? 'rate-excellent' :
+                                        officer.closureRate >= 60 ? 'rate-good' :
+                                            officer.closureRate >= 40 ? 'rate-fair' : 'rate-poor'
                                     }`}>
                                     {officer.total === 0 ? '-' : `${officer.closureRate.toFixed(1)}%`}
                                 </td>

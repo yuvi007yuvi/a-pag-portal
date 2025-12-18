@@ -14,7 +14,7 @@ import { normalizeSupervisorName } from '../utils/dataProcessor';
 
 export const DashboardPage: React.FC = () => {
     const { stats, filteredData, data, dateFrom, dateTo, minDate, maxDate, setDateFrom, setDateTo, setStats, setFilteredData } = useData();
-    const [selectedDepartment, setSelectedDepartment] = React.useState<'All' | 'Sanitation' | 'Civil'>('All');
+    const [selectedDepartment, setSelectedDepartment] = React.useState<'All' | 'Sanitation' | 'Civil' | 'C&D Waste'>('All');
 
     const applyFilters = () => {
         let filtered = [...data];
@@ -67,7 +67,7 @@ export const DashboardPage: React.FC = () => {
         return map;
     }, []);
 
-    const getSupervisorsByDept = (dept: 'Sanitation' | 'Civil') => {
+    const getSupervisorsByDept = (dept: 'Sanitation' | 'Civil' | 'C&D Waste') => {
         return allSupervisors.filter(s => {
             // Check direct mapping
             let d = supervisorDeptMap.get(normalizeSupervisorName(s.name));
@@ -80,6 +80,7 @@ export const DashboardPage: React.FC = () => {
 
     const sanitationSupervisors = getSupervisorsByDept('Sanitation');
     const civilSupervisors = getSupervisorsByDept('Civil');
+    const cndSupervisors = getSupervisorsByDept('C&D Waste');
 
     const getTopBottom = (list: typeof allSupervisors) => {
         const sorted = [...list].sort((a, b) => b.closureRate - a.closureRate);
@@ -93,6 +94,7 @@ export const DashboardPage: React.FC = () => {
 
     const sanStats = getTopBottom(sanitationSupervisors);
     const civilStats = getTopBottom(civilSupervisors);
+    const cndStats = getTopBottom(cndSupervisors);
 
     return (
         <div className="space-y-8 pb-12">
@@ -147,7 +149,7 @@ export const DashboardPage: React.FC = () => {
                             <div className="flex flex-col">
                                 <label className="text-xs font-medium text-slate-500 mb-1 ml-1">Department</label>
                                 <div className="flex bg-slate-100 p-0.5 rounded-lg h-[38px]">
-                                    {(['All', 'Sanitation', 'Civil'] as const).map((dept) => (
+                                    {(['All', 'Sanitation', 'Civil', 'C&D Waste'] as const).map((dept) => (
                                         <button
                                             key={dept}
                                             onClick={() => setSelectedDepartment(dept)}
@@ -257,6 +259,28 @@ export const DashboardPage: React.FC = () => {
                         <SupervisorRankCard
                             title="Bottom 5 Civil Supervisors"
                             supervisors={civilStats.bottom}
+                            type="bottom"
+                        />
+                    </div>
+                </>
+            )}
+
+            {(selectedDepartment === 'All' || selectedDepartment === 'C&D Waste') && (
+                <>
+                    <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-lg font-bold text-slate-800 border-l-4 border-amber-500 pl-3">
+                            C&D Waste Department Rankings
+                        </h3>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <SupervisorRankCard
+                            title="Top 5 C&D Waste Supervisors"
+                            supervisors={cndStats.top}
+                            type="top"
+                        />
+                        <SupervisorRankCard
+                            title="Bottom 5 C&D Waste Supervisors"
+                            supervisors={cndStats.bottom}
                             type="bottom"
                         />
                     </div>
