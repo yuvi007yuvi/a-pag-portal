@@ -232,7 +232,7 @@ export const ALLOWED_COMPLAINANT_NAMES = [
     "VISHAL VISHAL"
 ];
 
-function getDepartmentFromComplaintType(type: string): string {
+export function getDepartmentFromComplaintType(type: string): string {
     if (!type) return 'Sanitation';
 
     // Strict mapping based on user table

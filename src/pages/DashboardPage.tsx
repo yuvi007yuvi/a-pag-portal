@@ -6,31 +6,46 @@ import { StatusChart } from '../components/StatusChart';
 import { OfficerChart } from '../components/OfficerChart';
 import { SupervisorChart } from '../components/SupervisorChart';
 import { PendingAnalysisChart } from '../components/PendingAnalysisChart';
+import { SupervisorRankCard } from '../components/SupervisorRankCard';
 import { CheckCircle, AlertCircle, FileText, Calendar } from 'lucide-react';
 import { calculateStats } from '../utils/dataProcessor';
+import { getDepartmentFromComplaintType, officerMappings } from '../data/officerMappings';
+import { normalizeSupervisorName } from '../utils/dataProcessor';
 
 export const DashboardPage: React.FC = () => {
     const { stats, filteredData, data, dateFrom, dateTo, minDate, maxDate, setDateFrom, setDateTo, setStats, setFilteredData } = useData();
+    const [selectedDepartment, setSelectedDepartment] = React.useState<'All' | 'Sanitation' | 'Civil'>('All');
 
-    const applyDateFilter = () => {
-        if (!dateFrom || !dateTo) {
-            setFilteredData(data);
-            setStats(calculateStats(data));
-            return;
+    const applyFilters = () => {
+        let filtered = [...data];
+
+        // 1. Filter by Department
+        if (selectedDepartment !== 'All') {
+            filtered = filtered.filter(record =>
+                getDepartmentFromComplaintType(record.complaintsubtype) === selectedDepartment
+            );
         }
 
-        const fromDate = new Date(dateFrom);
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
+        // 2. Filter by Date
+        if (dateFrom && dateTo) {
+            const fromDate = new Date(dateFrom);
+            const toDate = new Date(dateTo);
+            toDate.setHours(23, 59, 59, 999);
 
-        const filtered = data.filter(record => {
-            const complaintDate = new Date(record['Complaint Registered Date']);
-            return complaintDate >= fromDate && complaintDate <= toDate;
-        });
+            filtered = filtered.filter(record => {
+                const complaintDate = new Date(record['Complaint Registered Date']);
+                return complaintDate >= fromDate && complaintDate <= toDate;
+            });
+        }
 
         setFilteredData(filtered);
         setStats(calculateStats(filtered));
     };
+
+    // Auto-apply filters when department changes
+    React.useEffect(() => {
+        applyFilters();
+    }, [selectedDepartment]);
 
     if (!stats) {
         return (
@@ -39,6 +54,45 @@ export const DashboardPage: React.FC = () => {
             </div>
         );
     }
+
+    // Process Supervisor Ranks by Department
+    const allSupervisors = stats.supervisorPerformance || [];
+
+    // Create map for supervisor department lookup
+    const supervisorDeptMap = React.useMemo(() => {
+        const map = new Map<string, string>();
+        officerMappings.forEach(m => {
+            map.set(normalizeSupervisorName(m.supervisor), m.department);
+        });
+        return map;
+    }, []);
+
+    const getSupervisorsByDept = (dept: 'Sanitation' | 'Civil') => {
+        return allSupervisors.filter(s => {
+            // Check direct mapping
+            let d = supervisorDeptMap.get(normalizeSupervisorName(s.name));
+            // If strictly filtered by department in filteredData, we might assume they belong,
+            // but relying on mapping is safer.
+            // If unknown, fallback?
+            return d === dept;
+        });
+    };
+
+    const sanitationSupervisors = getSupervisorsByDept('Sanitation');
+    const civilSupervisors = getSupervisorsByDept('Civil');
+
+    const getTopBottom = (list: typeof allSupervisors) => {
+        const sorted = [...list].sort((a, b) => b.closureRate - a.closureRate);
+        const top = sorted.slice(0, 5);
+        const bottom = [...list]
+            .filter(s => s.total > 0)
+            .sort((a, b) => a.closureRate - b.closureRate)
+            .slice(0, 5);
+        return { top, bottom };
+    };
+
+    const sanStats = getTopBottom(sanitationSupervisors);
+    const civilStats = getTopBottom(civilSupervisors);
 
     return (
         <div className="space-y-8 pb-12">
@@ -89,8 +143,28 @@ export const DashboardPage: React.FC = () => {
                             </div>
                         </div>
 
+                        <div className="flex items-center gap-3 border-l border-slate-100 pl-6 ml-2">
+                            <div className="flex flex-col">
+                                <label className="text-xs font-medium text-slate-500 mb-1 ml-1">Department</label>
+                                <div className="flex bg-slate-100 p-0.5 rounded-lg h-[38px]">
+                                    {(['All', 'Sanitation', 'Civil'] as const).map((dept) => (
+                                        <button
+                                            key={dept}
+                                            onClick={() => setSelectedDepartment(dept)}
+                                            className={`px-3 text-xs font-medium rounded-md transition-all ${selectedDepartment === dept
+                                                ? 'bg-white text-blue-600 shadow-sm'
+                                                : 'text-slate-500 hover:text-slate-700'
+                                                }`}
+                                        >
+                                            {dept}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
                         <button
-                            onClick={applyDateFilter}
+                            onClick={applyFilters}
                             className="self-end mb-[2px] px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200"
                         >
                             Apply Filter
@@ -142,6 +216,52 @@ export const DashboardPage: React.FC = () => {
                 <ZoneChart data={stats.zones} />
                 <StatusChart data={stats.statusDistribution} />
             </div>
+
+            {/* Supervisor Rankings */}
+            {/* Supervisor Rankings */}
+            {(selectedDepartment === 'All' || selectedDepartment === 'Sanitation') && (
+                <>
+                    <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-lg font-bold text-slate-800 border-l-4 border-blue-500 pl-3">
+                            Sanitation Department Rankings
+                        </h3>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <SupervisorRankCard
+                            title="Top 5 Sanitation Supervisors"
+                            supervisors={sanStats.top}
+                            type="top"
+                        />
+                        <SupervisorRankCard
+                            title="Bottom 5 Sanitation Supervisors"
+                            supervisors={sanStats.bottom}
+                            type="bottom"
+                        />
+                    </div>
+                </>
+            )}
+
+            {(selectedDepartment === 'All' || selectedDepartment === 'Civil') && (
+                <>
+                    <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-lg font-bold text-slate-800 border-l-4 border-indigo-500 pl-3">
+                            Civil Department Rankings
+                        </h3>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <SupervisorRankCard
+                            title="Top 5 Civil Supervisors"
+                            supervisors={civilStats.top}
+                            type="top"
+                        />
+                        <SupervisorRankCard
+                            title="Bottom 5 Civil Supervisors"
+                            supervisors={civilStats.bottom}
+                            type="bottom"
+                        />
+                    </div>
+                </>
+            )}
 
             {/* Pending Analysis */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

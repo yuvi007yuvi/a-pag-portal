@@ -33,6 +33,12 @@ export interface Stats {
         threeToSevenDays: number;
         moreThanSevenDays: number;
     };
+    supervisorPerformance: Array<{
+        name: string;
+        total: number;
+        closed: number;
+        closureRate: number;
+    }>;
 }
 
 export const normalizeSupervisorName = (name: string): string => {
@@ -117,7 +123,11 @@ export const calculateStats = (data: ComplaintRecord[]): Stats => {
             threeToSevenDays: 0,
             moreThanSevenDays: 0,
         },
+        supervisorPerformance: [],
     };
+
+    // Helper map for supervisor performance
+    const supPerfMap: Record<string, { total: number; closed: number }> = {};
 
     const now = new Date();
 
@@ -173,11 +183,22 @@ export const calculateStats = (data: ComplaintRecord[]): Stats => {
 
         // Supervisor stats
         if (row.assignedSupervisor) {
-            // It should already be normalized in parseCSV, but we use the value in the record.
             const supName = row.assignedSupervisor;
             stats.supervisors[supName] = (stats.supervisors[supName] || 0) + 1;
+
+            if (!supPerfMap[supName]) supPerfMap[supName] = { total: 0, closed: 0 };
+            supPerfMap[supName].total++;
+            if (status === 'Close') supPerfMap[supName].closed++;
         }
     });
+
+    // Populate supervisorPerformance
+    stats.supervisorPerformance = Object.entries(supPerfMap).map(([name, data]) => ({
+        name,
+        total: data.total,
+        closed: data.closed,
+        closureRate: data.total > 0 ? (data.closed / data.total) * 100 : 0
+    }));
 
     return stats;
 };
