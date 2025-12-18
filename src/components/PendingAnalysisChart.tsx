@@ -22,7 +22,7 @@ export const PendingAnalysisChart: React.FC<PendingAnalysisChartProps> = ({ stat
         { name: '> 7 Days', value: stats.pendingByAge.moreThanSevenDays, color: '#f87171' },
     ].filter(item => item.value > 0);
 
-    const colors = ['#f87171', '#fb923c', '#facc15', '#4ade80', '#60a5fa'];
+
 
     return (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
@@ -35,8 +35,8 @@ export const PendingAnalysisChart: React.FC<PendingAnalysisChartProps> = ({ stat
                     <button
                         onClick={() => setView('zone')}
                         className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'zone'
-                                ? 'bg-white text-slate-900 shadow-sm'
-                                : 'text-slate-500 hover:text-slate-700'
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700'
                             }`}
                     >
                         By Zone
@@ -44,8 +44,8 @@ export const PendingAnalysisChart: React.FC<PendingAnalysisChartProps> = ({ stat
                     <button
                         onClick={() => setView('age')}
                         className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'age'
-                                ? 'bg-white text-slate-900 shadow-sm'
-                                : 'text-slate-500 hover:text-slate-700'
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700'
                             }`}
                     >
                         Aging
