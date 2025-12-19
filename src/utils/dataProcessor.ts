@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import { findOfficer, ALLOWED_COMPLAINT_TYPES, ALLOWED_COMPLAINANT_NAMES } from '../data/officerMappings';
+import { findOfficer, getDepartmentFromComplaintType, ALLOWED_COMPLAINT_TYPES, ALLOWED_COMPLAINANT_NAMES } from '../data/officerMappings';
 
 export interface ComplaintRecord {
     'Sr No': string;
@@ -87,15 +87,33 @@ export const parseCSV = (file: File): Promise<ComplaintRecord[]> => {
                 });
 
                 records.forEach(record => {
+                    const complaintType = record['complaintsubtype'] || '';
+                    const expectedDepartment = getDepartmentFromComplaintType(complaintType);
+
                     const officer = findOfficer(
                         record['Zone'] || '',
                         record['Ward'] || '',
-                        record['complaintsubtype'] || ''
+                        complaintType
                     );
+
                     if (officer) {
-                        record.assignedOfficer = officer.officer;
-                        // Normalize supervisor name to aggregate same person across wards
-                        record.assignedSupervisor = normalizeSupervisorName(officer.supervisor);
+                        // VALIDATION: Ensure the found officer's department matches the complaint's expected department
+                        if (officer.department === expectedDepartment) {
+                            record.assignedOfficer = officer.officer;
+                            // Normalize supervisor name to aggregate same person across wards
+                            record.assignedSupervisor = normalizeSupervisorName(officer.supervisor);
+                        } else {
+                            // Department mismatch - this should not happen if findOfficer works correctly
+                            console.warn('⚠️ Department mismatch detected:', {
+                                complaintId: record['compId'],
+                                ward: record['Ward'],
+                                complaintType: complaintType,
+                                expectedDept: expectedDepartment,
+                                foundOfficer: officer.officer,
+                                foundDept: officer.department
+                            });
+                            // Don't assign the officer if departments don't match
+                        }
                     }
                 });
                 resolve(records);

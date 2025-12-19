@@ -4,6 +4,7 @@ import { Building2, Droplet, FileText, Trash2 } from 'lucide-react';
 import { ReportHeader } from '../components/ReportHeader';
 import { ExportMenu } from '../components/ExportMenu';
 import { exportToJPEG, exportToPDF, exportToExcel } from '../utils/exportUtils';
+import { officerMappings } from '../data/officerMappings';
 
 interface DepartmentStats {
     total: number;
@@ -194,6 +195,15 @@ export const DepartmentReportsPage: React.FC = () => {
         deptData.forEach(complaint => {
             const officer = complaint.assignedOfficer;
             if (!officer) return;
+
+            // VALIDATION: Check if this officer belongs to the target department
+            // by checking the officer mappings
+            const officerMapping = officerMappings.find(m => m.officer === officer);
+            if (officerMapping && officerMapping.department !== department) {
+                // Skip this complaint - officer is from wrong department
+                console.warn(`⚠️ Skipping complaint for ${officer} (${officerMapping.department}) in ${department} table`);
+                return;
+            }
 
             if (!officerStats[officer]) {
                 officerStats[officer] = { total: 0, closed: 0, statusCounts: {} };
