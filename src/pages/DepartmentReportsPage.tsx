@@ -245,7 +245,7 @@ export const DepartmentReportsPage: React.FC = () => {
         exportToExcel(dataToExport, `Department_Report_${selectedDept}_${new Date().toISOString().split('T')[0]}`);
     };
 
-    const DynamicTable = ({ title, officers, colorClass }: { title: string, officers: any[], colorClass: string }) => (
+    const DynamicTable = ({ title, officers }: { title: string, officers: any[] }) => (
         <div className="overflow-hidden border border-slate-300">
             <div className={`px-6 py-3 border-b border-slate-400 bg-white`}>
                 <h3 className="font-bold text-slate-800 text-base">{title}</h3>
@@ -303,8 +303,8 @@ export const DepartmentReportsPage: React.FC = () => {
                                 })}
 
                                 <td className={`text-center font-bold ${officer.closureRate >= 80 ? 'rate-excellent' :
-                                        officer.closureRate >= 60 ? 'rate-good' :
-                                            officer.closureRate >= 40 ? 'rate-fair' : 'rate-poor'
+                                    officer.closureRate >= 60 ? 'rate-good' :
+                                        officer.closureRate >= 40 ? 'rate-fair' : 'rate-poor'
                                     }`}>
                                     {officer.total === 0 ? '-' : `${officer.closureRate.toFixed(1)}%`}
                                 </td>
@@ -412,15 +412,15 @@ export const DepartmentReportsPage: React.FC = () => {
 
                     {/* Officer Tables */}
                     {(selectedDept === 'Both' || selectedDept === 'Sanitation') && sanitationOfficers.length > 0 && (
-                        <DynamicTable title="Sanitation Officers" officers={sanitationOfficers} colorClass="text-blue-700" />
+                        <DynamicTable title="Sanitation Officers" officers={sanitationOfficers} />
                     )}
 
                     {(selectedDept === 'Both' || selectedDept === 'Civil') && civilOfficers.length > 0 && (
-                        <DynamicTable title="Civil Officers" officers={civilOfficers} colorClass="text-green-700" />
+                        <DynamicTable title="Civil Officers" officers={civilOfficers} />
                     )}
 
                     {(selectedDept === 'Both' || selectedDept === 'C&D') && cndOfficers.length > 0 && (
-                        <DynamicTable title="C&D Department Officers" officers={cndOfficers} colorClass="text-amber-700" />
+                        <DynamicTable title="C&D Department Officers" officers={cndOfficers} />
                     )}
                 </div>
             </div>

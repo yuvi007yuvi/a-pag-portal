@@ -299,7 +299,7 @@ export const CnDReportsPage: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredSupervisors.map((supervisor, index) => (
+                                {filteredSupervisors.map((supervisor) => (
                                     <React.Fragment key={supervisor.supervisor}>
                                         {/* Supervisor Row */}
                                         <tr className="cursor-pointer hover:bg-slate-100" onClick={() => toggleSupervisor(supervisor.supervisor)}>
@@ -320,8 +320,8 @@ export const CnDReportsPage: React.FC = () => {
                                             <td className="status-pending text-center">{supervisor.pending}</td>
                                             <td className="status-reopen text-center">{supervisor.reopen}</td>
                                             <td className={`text-center font-semibold ${supervisor.closureRate >= 80 ? 'rate-excellent' :
-                                                    supervisor.closureRate >= 60 ? 'rate-good' :
-                                                        supervisor.closureRate >= 40 ? 'rate-fair' : 'rate-poor'
+                                                supervisor.closureRate >= 60 ? 'rate-good' :
+                                                    supervisor.closureRate >= 40 ? 'rate-fair' : 'rate-poor'
                                                 }`}>
                                                 {supervisor.closureRate.toFixed(1)}%
                                             </td>
