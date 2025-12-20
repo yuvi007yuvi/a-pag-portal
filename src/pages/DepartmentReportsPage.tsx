@@ -106,7 +106,7 @@ export const DepartmentReportsPage: React.FC = () => {
                             stats.closureRate >= 60 ? 'text-yellow-600' :
                                 stats.closureRate >= 40 ? 'text-orange-600' : 'text-red-600'
                             }`}>
-                            {stats.closureRate.toFixed(1)}%
+                            {isNaN(stats.closureRate) || !isFinite(stats.closureRate) ? '0.0' : stats.closureRate.toFixed(1)}%
                         </p>
                     </div>
                 </div>
@@ -231,6 +231,12 @@ export const DepartmentReportsPage: React.FC = () => {
     const civilOfficers = getOfficersByDepartment('Civil');
     const cndOfficers = getOfficersByDepartment('C&D');
 
+    // Debug: Log officer assignments to verify validation is working
+    console.log('📊 Department Reports - Officer Lists:');
+    console.log('Sanitation Officers:', sanitationOfficers.map(o => o.officer));
+    console.log('Civil Officers:', civilOfficers.map(o => o.officer));
+    console.log('C&D Officers:', cndOfficers.map(o => o.officer));
+
     const handleExportExcel = () => {
         const dataToExport: any[] = [];
         const processExport = (deptName: string, officers: any[]) => {
@@ -243,7 +249,7 @@ export const DepartmentReportsPage: React.FC = () => {
                     'Closed': o.closed,
                 };
                 uniqueStatuses.forEach(s => row[s] = o.statusCounts[s]);
-                row['Closure Rate'] = `${o.closureRate.toFixed(2)}%`;
+                row['Closure Rate'] = isNaN(o.closureRate) || !isFinite(o.closureRate) ? '0.00%' : `${o.closureRate.toFixed(2)}%`;
                 dataToExport.push(row);
             });
         };
@@ -316,7 +322,7 @@ export const DepartmentReportsPage: React.FC = () => {
                                     officer.closureRate >= 60 ? 'rate-good' :
                                         officer.closureRate >= 40 ? 'rate-fair' : 'rate-poor'
                                     }`}>
-                                    {officer.total === 0 ? '-' : `${officer.closureRate.toFixed(1)}%`}
+                                    {officer.total === 0 || isNaN(officer.closureRate) || !isFinite(officer.closureRate) ? '-' : `${officer.closureRate.toFixed(1)}%`}
                                 </td>
                             </tr>
                         ))}
