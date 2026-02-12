@@ -15,6 +15,73 @@ import { normalizeSupervisorName } from '../utils/dataProcessor';
 export const DashboardPage: React.FC = () => {
     const { stats, filteredData, data, dateFrom, dateTo, minDate, maxDate, setDateFrom, setDateTo, setStats, setFilteredData } = useData();
     const [selectedDepartment, setSelectedDepartment] = React.useState<'All' | 'Sanitation' | 'Civil' | 'C&D Waste'>('All');
+    const [cardFilters, setCardFilters] = React.useState<Record<string, { start: string; end: string }>>({});
+
+    // 1. Memoize Data Filtered by Department (Base for Card Filters)
+    const deptFilteredData = React.useMemo(() => {
+        if (selectedDepartment === 'All') return data;
+        return data.filter(record =>
+            getDepartmentFromComplaintType(record.complaintsubtype) === selectedDepartment
+        );
+    }, [data, selectedDepartment]);
+
+    const formatDateDisplay = (dateStr: string) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
+    const displayDateRange = (dateFrom && dateTo)
+        ? `${formatDateDisplay(dateFrom)} - ${formatDateDisplay(dateTo)}`
+        : (minDate && maxDate)
+            ? `${formatDateDisplay(minDate)} - ${formatDateDisplay(maxDate)}`
+            : 'All Time';
+
+    // 2. Helper to Calculate Card Specific Data
+    const calculateCardData = (key: string, defaultCount: number) => {
+        const filter = cardFilters[key];
+        // If no items in this filter, fallback to global count IF the global filter matches this range? 
+        // No, if no filter set for card, return standard stats value (which follows global filter)
+        if (!filter || (!filter.start && !filter.end)) return defaultCount;
+
+        const fromStr = filter.start || minDate;
+        const toStr = filter.end || maxDate;
+
+        if (!fromStr || !toStr) return defaultCount;
+
+        const fromDate = new Date(fromStr);
+        const toDate = new Date(toStr);
+        toDate.setHours(23, 59, 59, 999);
+
+        const filtered = deptFilteredData.filter(record => {
+            const d = new Date(record['Complaint Registered Date']);
+            return d >= fromDate && d <= toDate;
+        });
+
+        if (key === 'Total') return filtered.length;
+
+        // For Status Cards
+        return filtered.filter(r => {
+            const s = r['Status'] || 'Unknown';
+            const normalized = s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+            return normalized === key;
+        }).length;
+    };
+
+    const handleCardFilterChange = (key: string, start: string, end: string) => {
+        setCardFilters(prev => ({
+            ...prev,
+            [key]: { start, end }
+        }));
+    };
+
+    const getCardDateRangeDisplay = (key: string) => {
+        const filter = cardFilters[key];
+        if (filter && (filter.start || filter.end)) {
+            return `${formatDateDisplay(filter.start || minDate)} - ${formatDateDisplay(filter.end || maxDate)}`;
+        }
+        return displayDateRange;
+    };
 
     const applyFilters = () => {
         let filtered = [...data];
@@ -185,9 +252,13 @@ export const DashboardPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatsCard
                     title="Total Complaints"
-                    value={stats.total}
+                    value={calculateCardData('Total', stats.total)}
                     icon={FileText}
                     color="text-slate-600 bg-slate-50"
+                    dateRange={getCardDateRangeDisplay('Total')}
+                    onFilterChange={(s, e) => handleCardFilterChange('Total', s, e)}
+                    startDate={cardFilters['Total']?.start || (dateFrom ? dateFrom : '')}
+                    endDate={cardFilters['Total']?.end || (dateTo ? dateTo : '')}
                 />
 
                 {Object.entries(stats.statusDistribution).map(([status, count]) => {
@@ -205,9 +276,13 @@ export const DashboardPage: React.FC = () => {
                         <StatsCard
                             key={status}
                             title={`${status} Complaints`}
-                            value={count}
+                            value={calculateCardData(status, count)}
                             icon={icon}
                             color={color}
+                            dateRange={getCardDateRangeDisplay(status)}
+                            onFilterChange={(s, e) => handleCardFilterChange(status, s, e)}
+                            startDate={cardFilters[status]?.start || (dateFrom ? dateFrom : '')}
+                            endDate={cardFilters[status]?.end || (dateTo ? dateTo : '')}
                         />
                     );
                 })}
